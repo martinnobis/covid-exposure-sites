@@ -1,17 +1,5 @@
-// let geocodeEndpoint = "https://maps.googleapis.com/maps/api/geocode/json";
-// https://maps.google.com/maps/api/geocode/json?address=4/76%20langton%20street%20glenroy&key=AIzaSyDkzbccO1qXxia1LavssyBwv7HvSb1xrNI
-// let distanceEndpoint = "https://maps.googleapis.com/maps/api/distancematrix/json";
-
-const API_KEY = "AIzaSyCvaJZbxfYpEXYMGX9QYRCWp5V_pc214cw";
-// let what = `${distanceEndpoint}?units=metric&mode=walking&origins=4/76+langton+street+Glenroy&destinations=342+Bridge+Road+VIC+3121|Liberty+Petrol+Station+North+Melbourne+233-239+Flemington+Road&key=${API_KEY}`
-
-// fetch(what)
-//     .then(response => response.json())
-//     .then(data => console.log(data));
-
-const degsToRads = deg => (deg * Math.PI) / 180.0;
-
 function calcDist(lat1, lon1, lat2, lon2) {
+    const degsToRads = deg => (deg * Math.PI) / 180.0;
     let R = 6370.139; // (km) at lat = -37.81895485084791
     let dLat = degsToRads(lat2 - lat1);
     let dLon = degsToRads(lon2 - lon1);
@@ -24,11 +12,7 @@ function calcDist(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-function parseExposureSitesResponse(response) {
-    // TODO
-}
-
-function sortTable(lat, lon) {
+function sortTable() {
     // console.log("sorting table")
     // TODO
 }
@@ -64,28 +48,9 @@ function populateTable(sites) {
     sites.forEach(site => {
         let row = table.insertRow();
         row.insertCell(0).innerHTML = site.dist_km;
-        row.insertCell(1).innerHTML = site.title;
+        row.insertCell(1).innerHTML = `${site.title}, exposures: ${site.exposures.length}`;
         row.insertCell(2).innerHTML = getMaxTier(site);
     })
-}
-
-function updateDistanceColumn(userLat, userLon) {
-    console.log("updating distances");
-    let table = document.getElementById("exposure-sites").getElementsByTagName("tbody")[0];
-    for (let row of table.rows) {
-        const siteHash = row.cell
-        let distance = -2;
-
-        // check to see if site is in localStorage
-        // if not,
-
-        // if it is in localStorage
-        //      get coords    
-
-        // calculate distance and update table
-
-        row.cells[0].innerHTML = distance;
-    }
 }
 
 function styleTable(userAcc) {
@@ -153,25 +118,42 @@ function parseSitesResponse(sitesResponse) {
     return sites;
 }
 
-function equalSites(s1, s2) {
+function samePlace(s1, s2) {
     return s1.title == s2.title && s1.street_address == s2.street_address;
 }
 
-function foldSites(sites) {
-    let newSites = [];
-    sites.forEach(s1 => {
-        let found = false
-        sites.forEach(s2 => {
-            if (equalSites(s1, s2)) {
-                // collapse s2 into s1
-                found = true;
-            }
-            if (found) {
-                newSites.push(s1);
-            }
+function duplicateSites(s1, s2) {
+    return JSON.stringify(s1) == JSON.stringify(s2);
+}
 
-        })
-    })
+function foldSites(sites) {
+    let foldedSites = [sites[0]]; // add first one
+    for (s1 of sites) {
+        let folded = false
+        let duplicate = false
+
+        for (s2 of foldedSites) {
+            if (duplicateSites(s1, s2)) {
+                duplicate = true;
+                break;
+            }
+            if (samePlace(s1, s2) && !duplicateSites(s1, s2)) {
+                console.log("folding site")
+                s2.exposures.push(...s1.exposures);
+                folded = true;
+                break;
+            }
+        }
+        if (duplicate) {
+            console.log("duplicate site, ignoring")
+            continue;
+        }
+        if (!folded) {
+            console.log("new object, pushing")
+            foldedSites.push(s1);
+        }
+    }
+    return foldedSites;
 }
 
 let mockLat = -37;
@@ -204,6 +186,9 @@ navigator.geolocation.watchPosition((position) => {
     console.log(userPos);
 
     fetchExposureSites().then(sitesResponse => parseSitesResponse(sitesResponse)).then(sites => {
+
+        sites = foldSites(sites);
+
         let sitep = []
         sites.forEach(site => {
             sitep.push(
