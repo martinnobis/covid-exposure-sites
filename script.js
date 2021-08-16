@@ -12,21 +12,38 @@ function calcDist(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
+function fastCalcDist(lat1, lon1, lat2, lon2) {
+    const degsToRads = deg => (deg * Math.PI) / 180.0;
+    let R = 6370.139; // (km) at lat = -37.81895485084791
+    let dLat = degsToRads(lat2 + lat1);
+    let dLon = degsToRads(lon2 - lon1);
+    let lat1_rad = degsToRads(lat1);
+    let lat2_rad = degsToRads(lat2);
+
+    const x = dLon * Math.cos(0.5 * dLat)
+    const y = lat2_rad - lat1_rad
+    return R * Math.sqrt(x * x + y * y)
+}
+
+function fastestCalcDist(lat1, lon1, lat2, lon2) {
+    // pythagoras
+    return 111 * Math.sqrt(Math.pow((lat2 - lat1) * Math.cos(lat1), 2) + Math.pow(lon2 - lon1, 2));
+}
+
 function sortTable() {
     // console.log("sorting table")
     // TODO
 }
 
-
-function addformattedDist(site) {
-    const dist_m = site.dist_km * 1000;
+function formatDist(dist_km) {
     if (dist_km < 1) {
         // display in m and round to nearest 10m
-        site.formattedDistValue = Math.ceil(dist_m / 10) * 10;
-        site.formattedDistUnit = "m"
+        const value = Math.round(dist_km * 100) * 10;
+        return `${value}m`
     } else {
-        site.formattedDistValue = Math.ceil(dist_m / 100) * 100;
-        site.formattedDistUnit = "km"
+        // display in km and round to nearest 100m
+        const value = dist_km.toFixed(1);
+        return `${value}km`
     }
 }
 
@@ -48,7 +65,7 @@ function populateTable(sites) {
     table.innerHTML = "";
     sites.forEach(site => {
         let row = table.insertRow();
-        row.insertCell(0).innerHTML = site.dist_km;
+        row.insertCell(0).innerHTML = site.formattedDist;
         row.insertCell(1).innerHTML = `${site.title}, exposures: ${site.exposures.length}`;
         row.insertCell(2).innerHTML = getMaxTier(site);
     })
@@ -58,18 +75,9 @@ function styleTable(userAcc) {
 
 }
 
-async function fetchExposureSites() {
-    console.log("fetching exposure sites");
-    // let url = "https://discover.data.vic.gov.au/api/3/action/datastore_search?resource_id=afb52611-6061-4a2b-9110-74c920bede77";
-    // return (await fetch(url)).json()
-    // TODO: handle pagination
-    return mockSiteResponse;
-}
-
 async function getUserPosition() {
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
-    const minsToMs = mins => mins * 60000;
 
     // Although there is an option to set the timeout for getCurrentPosition, it
     // doesn't seem to work every time. So this function will store the user's
@@ -97,26 +105,27 @@ async function getUserPosition() {
     }
 }
 
-function parseSitesResponse(sitesResponse) {
-    let sites = []
-    sitesResponse.result.records.forEach(site => {
-        sites.push({
-            hash: `${site.Site_title} ${site.Site_streetaddress}`,
-            title: site.Site_title,
-            street_address: site.Site_streetaddress,
-            state: site.Site_state,
-            postcode: site.Site_postcode,
-            exposures: [{
-                date: site.Exposure_date,
-                time: site.Exposure_time,
-                added_date: site.Added_date,
-                added_time: site.Added_time,
-                tier: /\d/.exec(site.Advice_title)[0], // not global, so will stop at the first match
-                notes: site.Notes,
-            }],
-        })
-    })
-    return sites;
+function parseRawSite(site) {
+    let computedHash = `${site.Site_title.toLowerCase().replace(/\s+/g, "")}`; // lower case and remove all whitespaces
+    if (site.Site_streetaddress) {
+        // public transport exposures don't have Site_streetaddress set
+        computedHash = computedHash.concat(site.Site_streetaddress.toLowerCase().replace(/\s+/g, ""));
+    }
+    return {
+        hash: computedHash,
+        title: site.Site_title,
+        street_address: site.Site_streetaddress,
+        state: site.Site_state,
+        postcode: site.Site_postcode,
+        exposures: [{
+            date: site.Exposure_date,
+            time: site.Exposure_time,
+            added_date: site.Added_date,
+            added_time: site.Added_time,
+            tier: /\d/.exec(site.Advice_title)[0], // not global, so will stop at the first match
+            notes: site.Notes,
+        }],
+    }
 }
 
 function samePlace(s1, s2) {
@@ -139,7 +148,6 @@ function foldSites(sites) {
                 break;
             }
             if (samePlace(s1, s2) && !duplicateSites(s1, s2)) {
-                console.log("folding site")
                 s2.exposures.push(...s1.exposures);
                 folded = true;
                 break;
@@ -149,7 +157,6 @@ function foldSites(sites) {
             continue;
         }
         if (!folded) {
-            console.log("new object, pushing")
             foldedSites.push(s1);
         }
     }
@@ -178,8 +185,6 @@ function paginatedParallelFetch() {
         })
 }
 
-// console.log(paginatedParallelFetch());
-
 function paginatedFetch(offset, prevResponse) {
     return fetch(sitesUrl(offset))
         .then(response => response.json())
@@ -194,26 +199,44 @@ function paginatedFetch(offset, prevResponse) {
         });
 }
 
-// console.log(paginatedFetch(0, []));
+function cacheSites(sites) {
+    window.localStorage.setItem("sites", JSON.stringify(sites));
+    window.localStorage.setItem("sitesLastUpdated", +Date.now())
+}
 
-let mockLat = -37;
-let mockLon = 144;
-mockSiteResponse.result.records.forEach(site => {
-    window.localStorage.setItem(`${site.Site_title} ${site.Site_streetaddress}`, JSON.stringify({ lat: mockLat, lon: mockLon }));
-    mockLat += 10;
-    mockLon -= 10;
-})
+const minsToMs = mins => mins * 60000;
 
-window.localStorage.setItem("Home 4/76 Langton Street", JSON.stringify({ lat: -37.6964587401896, lon: 144.9143448974064 }))
-window.localStorage.setItem("Little Frenchie & Co 342 Bridge Road", JSON.stringify({ lat: -37.81895485084791, lon: 145.00274705322926 }));
-window.localStorage.setItem("Gervase Avenue Playground Cnr Beckett Street North and, Gervase Ave", JSON.stringify({ lat: -37.69602696953057, lon: 144.91210400953273 }));
+async function getSites() {
+    const maxAgeMins = 30; // maximum cached sites age
 
-// let p1 = fetchExposureSites().then(sitesResponse => populateTable(sitesResponse))
-let p1 = fetchExposureSites().then(sitesResponse => parseSitesResponse(sitesResponse))
+    if (!window.localStorage.getItem("sites") || parseInt(window.localStorage.getItem("sitesLastUpdated")) < minsToMs(maxAgeMins)) {
+        return paginatedFetch(0, []).then(sites => sites.map(site => parseRawSite(site)));
+    } else {
+        return JSON.parse(window.localStorage.getItem("sites"));
+    }
+}
+
+// getSites().then(sites => {
+//     cacheSites(sites);
+//     console.log(sites);
+// })
+
+// let mockLat = -37;
+// let mockLon = 144;
+// mockSiteResponse.result.records.forEach(site => {
+//     window.localStorage.setItem(`${site.Site_title} ${site.Site_streetaddress}`, JSON.stringify({ lat: mockLat, lon: mockLon }));
+//     mockLat += 10;
+//     mockLon -= 10;
+// })
+
+window.localStorage.setItem("home4/76langtonstreet", JSON.stringify({ lat: -37.6964587401896, lon: 144.9143448974064 }))
+window.localStorage.setItem("littlefrenchie&co342bridgeroad", JSON.stringify({ lat: -37.81895485084791, lon: 145.00274705322926 }));
+window.localStorage.setItem("gervaseavenueplaygroundcnrbeckettstreetnorthand,gervaseave", JSON.stringify({ lat: -37.69602696953057, lon: 144.91210400953273 }));
 
 async function getSiteCoords(site) {
     const coords = window.localStorage.getItem(site.hash);
     if (!coords) {
+        return { lat: -37, lon: 144 };
         //      query my backend for the coords 
         //      create entry for site in localStorage and add coords 
     } else {
@@ -225,20 +248,19 @@ navigator.geolocation.watchPosition((position) => {
     const userPos = { lat: position.coords.latitude, lon: position.coords.longitude, acc: position.coords.accuracy };
     console.log(userPos);
 
-    fetchExposureSites().then(sitesResponse => parseSitesResponse(sitesResponse)).then(sites => {
-
-        sites = foldSites(sites);
+    getSites().then(sites => {
+        cacheSites(sites);
 
         let sitep = []
         sites.forEach(site => {
             sitep.push(
                 getSiteCoords(site).then(coords => {
-                    site.dist_km = calcDist(coords.lat, coords.lon, userPos.lat, userPos.lon);
+                    site.dist_km = fastestCalcDist(coords.lat, coords.lon, userPos.lat, userPos.lon);
+                    site.formattedDist = formatDist(site.dist_km);
                 }))
         })
 
         Promise.all(sitep).then(() => {
-            console.log(sites);
             populateTable(sites);
             // sortTable();
             // styleTable(userPos.acc); // style table based on distance and location accuracy
