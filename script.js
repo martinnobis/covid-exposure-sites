@@ -156,23 +156,45 @@ function foldSites(sites) {
     return foldedSites;
 }
 
-function paginatedFetch(offset, prevResponse) {
-    let url = offset => `https://discover.data.vic.gov.au/api/3/action/datastore_search?offset=${offset}&resource_id=afb52611-6061-4a2b-9110-74c920bede77`
-    return fetch(url(offset))
-        .then(response => response.json())
-        .then(newResponse => {
-            const response = [...prevResponse, ...newResponse.result.records]; // combine the two arrays
+let sitesUrl = offset => `https://discover.data.vic.gov.au/api/3/action/datastore_search?offset=${offset}&resource_id=afb52611-6061-4a2b-9110-74c920bede77`
 
-            if (newResponse.result.records.length !== 0) {
+function paginatedParallelFetch() {
+    return fetch(sitesUrl(0))
+        .then(response => response.json())
+        .then(responseJson => {
+            let rawSites = [responseJson.result.records]
+            let offset = 100;
+            while (offset < responseJson.result.total) {
+                rawSites.push(
+                    fetch(sitesUrl(offset))
+                    .then(response => response.json())
+                    .then(responseJson => responseJson.result.records))
                 offset += 100;
-                return paginatedFetch(offset, response);
             }
 
+            return Promise.all(rawSites).then(rawSites => {
+                return rawSites.reduce((acc, curr) => [...acc, ...curr])
+            })
+        })
+}
+
+// console.log(paginatedParallelFetch());
+
+function paginatedFetch(offset, prevResponse) {
+    return fetch(sitesUrl(offset))
+        .then(response => response.json())
+        .then(responseJson => {
+            const response = [...prevResponse, ...responseJson.result.records]; // combine the two arrays
+
+            offset += 100;
+            if (offset < responseJson.result.total) {
+                return paginatedFetch(offset, response);
+            }
             return response;
         });
 }
 
-console.log(paginatedFetch(0, []));
+// console.log(paginatedFetch(0, []));
 
 let mockLat = -37;
 let mockLon = 144;
