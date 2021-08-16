@@ -17,6 +17,7 @@ function sortTable() {
     // TODO
 }
 
+
 function addformattedDist(site) {
     const dist_m = site.dist_km * 1000;
     if (dist_km < 1) {
@@ -145,7 +146,6 @@ function foldSites(sites) {
             }
         }
         if (duplicate) {
-            console.log("duplicate site, ignoring")
             continue;
         }
         if (!folded) {
@@ -155,6 +155,24 @@ function foldSites(sites) {
     }
     return foldedSites;
 }
+
+function paginatedFetch(offset, prevResponse) {
+    let url = offset => `https://discover.data.vic.gov.au/api/3/action/datastore_search?offset=${offset}&resource_id=afb52611-6061-4a2b-9110-74c920bede77`
+    return fetch(url(offset))
+        .then(response => response.json())
+        .then(newResponse => {
+            const response = [...prevResponse, ...newResponse.result.records]; // combine the two arrays
+
+            if (newResponse.result.records.length !== 0) {
+                offset += 100;
+                return paginatedFetch(offset, response);
+            }
+
+            return response;
+        });
+}
+
+console.log(paginatedFetch(0, []));
 
 let mockLat = -37;
 let mockLon = 144;
