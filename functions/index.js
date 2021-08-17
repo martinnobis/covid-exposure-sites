@@ -1,4 +1,10 @@
+require('dotenv').config()
 const functions = require("firebase-functions");
+const fetch = require("node-fetch");
+
+function getGeocodeUrl(address) {
+    return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${process.env.GEOCODE_API_KEY}`
+}
 
 // The Firebase Admin SDK to access Firestore.
 const admin = require('firebase-admin');
@@ -23,24 +29,51 @@ exports.addMessage = functions.https.onRequest(async(req, res) => {
     // Grab the text parameter.
     const original = req.query.text;
     // Push the new message into Firestore using the Firebase Admin SDK.
-    const writeResult = await admin.firestore().collection('sites').doc('some address').set({ location: new admin.firestore.GeoPoint(-32, 147) });
+    const writeResult = await admin.firestore().collection('sites').doc('some adasddress').set({ location: new admin.firestore.GeoPoint(-32, 147) });
     // Send back a message that we've successfully written the message
     res.json({ result: `Message with ID: ${writeResult.id} added.` });
 });
 
-exports.coords = functions.https.onRequest(async(req, res) => {
-    var docRef = admin.firestore().collection("sites").doc(`${req.query.site}`);
+exports.coords = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
+
+    const searchParam = req.query.site;
+    const hash = searchParam.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
+
+    // Can't have forward slash in document id!!
+
+    var docRef = admin.firestore().collection("sites").doc(hash);
 
     docRef.get().then((doc) => {
         if (doc.exists) {
-            console.log("Document data:", doc.data());
-            res.json({ result: doc.data() });
+            const coords = doc.data().location;
+            console.log("Document exists, returning: ", coords);
+            res.json({ result: coords });
         } else {
-            // doc.data() will be undefined in this case
-            console.log("No such document!");
+            console.log(`No such document: ${searchParam} - ${hash}`);
+            fetch(getGeocodeUrl(searchParam))
+                .then(response => response.json())
+                .then(responseJson => {
+                    const coords = new admin.firestore.GeoPoint(
+                        responseJson.results[0].geometry.location.lat,
+                        responseJson.results[0].geometry.location.lng,
+                    )
+                    console.log("Fetched data:", coords);
+
+                    console.log("Writing to Firestore");
+                    admin.firestore().collection('sites').doc(hash).set({ location: coords })
+                        .then(console.log("Successfully wrote new document"))
+                        .catch((error) => {
+                            console.log("Error writing document", error);
+                        });
+                    console.log("Returning coords");
+                    res.json({ result: coords });
+                })
+                .catch((error) => {
+                    console.log("Error getting site coords: ", error);
+                })
         }
     }).catch((error) => {
-        console.log("Error getting document:", error);
+        console.log("Error getting document: ", error);
     });
 })
 

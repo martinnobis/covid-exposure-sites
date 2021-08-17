@@ -1,33 +1,33 @@
-function calcDist(lat1, lon1, lat2, lon2) {
+function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
     let R = 6370.139; // (km) at lat = -37.81895485084791
     let dLat = degsToRads(lat2 - lat1);
-    let dLon = degsToRads(lon2 - lon1);
+    let dLng = degsToRads(lng2 - lng1);
     let lat1_rad = degsToRads(lat1);
     let lat2_rad = degsToRads(lat2);
 
     let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1_rad) * Math.cos(lat2_rad);
+        Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1_rad) * Math.cos(lat2_rad);
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
 
-function fastCalcDist(lat1, lon1, lat2, lon2) {
+function fastCalcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
     let R = 6370.139; // (km) at lat = -37.81895485084791
     let dLat = degsToRads(lat2 + lat1);
-    let dLon = degsToRads(lon2 - lon1);
+    let dLng = degsToRads(lng2 - lng1);
     let lat1_rad = degsToRads(lat1);
     let lat2_rad = degsToRads(lat2);
 
-    const x = dLon * Math.cos(0.5 * dLat)
+    const x = dLng * Math.cos(0.5 * dLat)
     const y = lat2_rad - lat1_rad
     return R * Math.sqrt(x * x + y * y)
 }
 
-function fastestCalcDist(lat1, lon1, lat2, lon2) {
+function fastestCalcDist(lat1, lng1, lat2, lng2) {
     // pythagoras
-    return 111 * Math.sqrt(Math.pow((lat2 - lat1) * Math.cos(lat1), 2) + Math.pow(lon2 - lon1, 2));
+    return 111 * Math.sqrt(Math.pow((lat2 - lat1) * Math.cos(lat1), 2) + Math.pow(lng2 - lng1, 2));
 }
 
 function sortTable() {
@@ -66,7 +66,7 @@ function populateTable(sites) {
     sites.forEach(site => {
         let row = table.insertRow();
         row.insertCell(0).innerHTML = site.formattedDist;
-        row.insertCell(1).innerHTML = `${site.title}, exposures: ${site.exposures.length}`;
+        row.insertCell(1).innerHTML = `${site.title} ${site.street_address}, exposures: ${site.exposures.length}`;
         row.insertCell(2).innerHTML = getMaxTier(site);
     })
 }
@@ -89,30 +89,39 @@ async function getUserPosition() {
         return new Promise((success, failure) =>
             navigator.geolocation.getCurrentPosition(pos => {
                 window.localStorage.setItem("userLat", pos.coords.latitude)
-                window.localStorage.setItem("userLon", pos.coords.longitude)
+                window.localStorage.setItem("userLng", pos.coords.lnggitude)
                 window.localStorage.setItem("userAcc", pos.coords.accuracy);
                 window.localStorage.setItem("userPosLastUpdated", +timeNow)
-                success({ lat: pos.coords.latitude, lon: pos.coords.latitude, acc: pos.coords.accuracy });
+                success({ lat: pos.coords.latitude, lng: pos.coords.latitude, acc: pos.coords.accuracy });
             }, failure, options)
         );
     } else {
         console.log("getting stored user position");
         return {
             lat: window.localStorage.getItem("userLat"),
-            lon: window.localStorage.getItem("userLon"),
+            lng: window.localStorage.getItem("userLng"),
             acc: window.localStorage.getItem("userAcc")
         }
     }
 }
 
-function parseRawSite(site) {
-    let computedHash = `${site.Site_title.toLowerCase().replace(/\s+/g, "")}`; // lower case and remove all whitespaces
-    if (site.Site_streetaddress) {
-        // public transport exposures don't have Site_streetaddress set
-        computedHash = computedHash.concat(site.Site_streetaddress.toLowerCase().replace(/\s+/g, ""));
+function getHash(rawSite) {
+    let hash = getCoordsSearchParam(rawSite);
+    // Firestore document ids can't have a forward slash but backslashes are fine
+    return hash.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
+}
+
+function getCoordsSearchParam(rawSite) {
+    let param = rawSite.Site_title;
+    if (rawSite.Site_street_address) {
+        param = param.concat(` ${rawSite.Site_street_address}`)
     }
+    return param;
+}
+
+function parseRawSite(site) {
     return {
-        hash: computedHash,
+        hash: getash(rawSite),
         title: site.Site_title,
         street_address: site.Site_streetaddress,
         state: site.Site_state,
@@ -222,30 +231,38 @@ async function getSites() {
 // })
 
 // let mockLat = -37;
-// let mockLon = 144;
+// let mockLng = 144;
 // mockSiteResponse.result.records.forEach(site => {
-//     window.localStorage.setItem(`${site.Site_title} ${site.Site_streetaddress}`, JSON.stringify({ lat: mockLat, lon: mockLon }));
+//     window.localStorage.setItem(`${site.Site_title} ${site.Site_streetaddress}`, JSON.stringify({ lat: mockLat, lng: mockLng }));
 //     mockLat += 10;
-//     mockLon -= 10;
+//     mockLng -= 10;
 // })
 
-window.localStorage.setItem("home4/76langtonstreet", JSON.stringify({ lat: -37.6964587401896, lon: 144.9143448974064 }))
-window.localStorage.setItem("littlefrenchie&co342bridgeroad", JSON.stringify({ lat: -37.81895485084791, lon: 145.00274705322926 }));
-window.localStorage.setItem("gervaseavenueplaygroundcnrbeckettstreetnorthand,gervaseave", JSON.stringify({ lat: -37.69602696953057, lon: 144.91210400953273 }));
+// window.localStorage.setItem("home4/76langtonstreet", JSON.stringify({ lat: -37.6964587401896, lng: 144.9143448974064 }))
+// window.localStorage.setItem("littlefrenchie&co342bridgeroad", JSON.stringify({ lat: -37.81895485084791, lng: 145.00274705322926 }));
+// window.localStorage.setItem("gervaseavenueplaygroundcnrbeckettstreetnorthand,gervaseave", JSON.stringify({ lat: -37.69602696953057, lng: 144.91210400953273 }));
 
 async function getSiteCoords(site) {
+    const url = `http://localhost:5001/covid-exposure-sites-322711/us-central1/coords?site=${siteCoordsSearchParam(site)}`;
     const coords = window.localStorage.getItem(site.hash);
     if (!coords) {
-        return { lat: -37, lon: 144 };
-        //      query my backend for the coords 
-        //      create entry for site in localStorage and add coords 
+        fetch(url)
+            .then(response => response.json())
+            .then(responseJson => {
+                const coordsResponse = {
+                    lat: responseJson.result._latitude,
+                    lng: responseJson.result._longitude
+                }
+                window.localStorage.setItem(site.hash, JSON.stringify(coordsResponse));
+                return coordsResponse;
+            })
     } else {
         return JSON.parse(coords);
     }
 }
 
 navigator.geolocation.watchPosition((position) => {
-    const userPos = { lat: position.coords.latitude, lon: position.coords.longitude, acc: position.coords.accuracy };
+    const userPos = { lat: position.coords.latitude, lng: position.coords.longitude, acc: position.coords.accuracy };
     console.log(userPos);
 
     getSites().then(sites => {
@@ -255,12 +272,13 @@ navigator.geolocation.watchPosition((position) => {
         sites.forEach(site => {
             sitep.push(
                 getSiteCoords(site).then(coords => {
-                    site.dist_km = fastestCalcDist(coords.lat, coords.lon, userPos.lat, userPos.lon);
+                    site.dist_km = fastestCalcDist(coords.lat, coords.lng, userPos.lat, userPos.lng);
                     site.formattedDist = formatDist(site.dist_km);
                 }))
         })
 
         Promise.all(sitep).then(() => {
+            console.log(sites);
             populateTable(sites);
             // sortTable();
             // styleTable(userPos.acc); // style table based on distance and location accuracy
