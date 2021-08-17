@@ -6,14 +6,18 @@
 - [x] Get exposure sites from VIC endpoint and handle pagination
 - [x] Cache exposure sites in localStorage
 - [x] Work on functions backend for getting site coords and updating firestore
+- [ ] Rearchitect event handling, remove user position watching for now
+- [x] Demonstrate calling Functions the proper way
 - [ ] Clean raw exposure site data
 - [ ] Populate rows with all site data
-- [ ] Handle public transport sites (which don't have a single address)
+- [x] Handle public transport sites (which don't have a single address)
 - [ ] Style website
 - [x] Format distance:
   - < 1km: display in m and round to nearest 10m
   - \> 1km: display in km and round to nearest 100m
 - [x] Handle duplicate sites and exposures from VIC data, unlikely but possible.
+- [ ] Privacy policy
+- [ ] Terms of use
 - [ ] Productionise app
   - Favicon
   - Site title/description

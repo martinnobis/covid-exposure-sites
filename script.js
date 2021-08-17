@@ -1,3 +1,16 @@
+// PROD: Flip lines below
+// let functions = firebase.app().functions("australia-southeast1")
+let functions = firebase.app().functions()
+
+// PROD: Comment out line below
+firebase.functions().useEmulator("localhost", 5001);
+
+let getCoords = functions.httpsCallable('coords');
+getCoords({ site: "federation square melbourne" })
+    .then((result) => {
+        console.log(result);
+    });
+
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
     let R = 6370.139; // (km) at lat = -37.81895485084791
@@ -121,7 +134,7 @@ function getCoordsSearchParam(rawSite) {
 
 function parseRawSite(site) {
     return {
-        hash: getash(rawSite),
+        hash: getHash(rawSite),
         title: site.Site_title,
         street_address: site.Site_streetaddress,
         state: site.Site_state,
