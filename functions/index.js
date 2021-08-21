@@ -3,82 +3,222 @@ const functions = require("firebase-functions");
 const fetch = require("node-fetch");
 
 function getGeocodeUrl(address) {
-    return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${process.env.GEOCODE_API_KEY}`
+    return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&bounds=-34.21832861798514,140.97232382930986|-38.780983886239156,147.920293027031&components=country:AU&key=${process.env.GEOCODE_API_KEY}`
 }
 
 // The Firebase Admin SDK to access Firestore.
 const admin = require('firebase-admin');
+const { parse } = require('dotenv');
 admin.initializeApp();
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.helloWorld = functions.https.onRequest((request, response) => {
-    functions.logger.info("Hello logs!", { structuredData: true });
-    response.send("Hello from Firebase!");
-});
+function getHash(rawSite) {
+    let hash = rawSite.Site_title;
+    if (rawSite.Site_streetaddress) {
+        hash = hash.concat(rawSite.Site_streetaddress);
+    }
+    // Firestore document ids can't have a forward slash but backslashes are fine
+    return hash.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
+}
 
-exports.helloWorld2 = functions.https.onRequest((request, response) => {
-    functions.logger.info("Hello logs!", { structuredData: true });
-    response.send("Hello from Firebase2!");
-});
+function parseRawSite(site) {
+    return {
+        hash: getHash(site),
+        title: site.Site_title,
+        street_address: site.Site_streetaddress,
+        postcode: site.Site_postcode,
+        suburb: site.Suburb,
+        exposures: [{
+            date: site.Exposure_date,
+            time: site.Exposure_time,
+            added_date: site.Added_date,
+            added_time: site.Added_time,
+            tier: /\d/.exec(site.Advice_title)[0], // not global, so will stop at the first match
+            notes: site.Notes,
+        }],
+    }
+}
 
-// Take the text parameter passed to this HTTP endpoint and insert it into 
-// Firestore under the path /messages/:documentId/original
-exports.addMessage = functions.https.onRequest(async(req, res) => {
-    // Grab the text parameter.
-    const original = req.query.text;
-    // Push the new message into Firestore using the Firebase Admin SDK.
-    const writeResult = await admin.firestore().collection('sites').doc('some adasddress').set({ location: new admin.firestore.GeoPoint(-32, 147) });
-    // Send back a message that we've successfully written the message
-    res.json({ result: `Message with ID: ${writeResult.id} added.` });
-});
+async function paginatedSiteFetch(offset, prevResponse) {
+    // TODO: Can turn this into a generator
+    let sitesUrl = `https://discover.data.vic.gov.au/api/3/action/datastore_search?offset=${offset}&resource_id=afb52611-6061-4a2b-9110-74c920bede77`
+    return fetch(sitesUrl)
+        .then(response => response.json())
+        .then(responseJson => {
+            const response = [...prevResponse, ...responseJson.result.records]; // combine the two arrays
 
-// PROD: uncomment this line to deploy function to Australian region
-// exports.coords = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
-exports.coords = functions.https.onCall(async(data, context) => {
+            offset += 100;
+            if (offset < responseJson.result.total) {
+                return paginatedSiteFetch(offset, response);
+            }
+            return response;
+        });
+}
 
-    const searchParam = data.site;
-    const hash = searchParam.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
+async function getSiteCoords(site) {
 
-    // Can't have forward slash in document id!!
+    let docRef = admin.firestore().collection("sites").doc(site.hash);
 
-    let docRef = admin.firestore().collection("sites").doc(hash);
-
-    return docRef.get().then((doc) => {
+    return docRef.get()
+        .then(doc => {
             if (doc.exists) {
-                const coords = doc.data().location;
-                console.log("Document exists, returning: ", coords);
-                return coords;
+                const coord = doc.data();
+                console.log("Coord exists, returning: ", coord);
+                return coord;
             } else {
-                console.log(`No such document: ${searchParam} - ${hash}`);
-                return fetch(getGeocodeUrl(searchParam))
+                console.log(`No such document: ${site.hash}`);
+                fetch(getGeocodeUrl(`${site.title} ${site.street_address} ${site.suburb}`))
                     .then(response => response.json())
                     .then(responseJson => {
-                        const coords = new admin.firestore.GeoPoint(
-                            responseJson.results[0].geometry.location.lat,
-                            responseJson.results[0].geometry.location.lng,
-                        )
-                        console.log("Fetched data:", coords);
+                        const coord = {
+                            location: new admin.firestore.GeoPoint(
+                                responseJson.results[0].geometry.location.lat,
+                                responseJson.results[0].geometry.location.lng,
+                            )
+                        }
+                        console.log("Fetched coord:", coord);
 
                         console.log("Writing to Firestore");
-                        admin.firestore().collection('sites').doc(hash).set({ location: coords })
-                            .then(console.log("Successfully wrote new document"))
+                        admin.firestore().collection('sites').doc(site.hash).set(coord)
+                            .then(console.log("Successfully wrote new site coord"))
                             .catch((error) => {
                                 console.log("Error writing document", error);
                             });
-                        console.log("Returning coords");
-                        return coords;
+                        console.log("Returning coord");
+                        return coord;
                     })
                     .catch((error) => {
                         console.log("Error getting site coords: ", error);
                     })
             }
         })
-        .catch((error) => {
+        .catch(error => {
             console.log("Error getting document: ", error);
         });
+}
+
+
+function samePlace(s1, s2) {
+    return s1.title == s2.title && s1.street_address == s2.street_address;
+}
+
+function duplicateSites(s1, s2) {
+    return JSON.stringify(s1) == JSON.stringify(s2);
+}
+
+function foldSites(sites) {
+    if (sites === undefined || sites.length == 0) {
+        return [];
+    }
+
+    let foldedSites = [sites[0]]; // add first one
+    for (s1 of sites) {
+        let folded = false
+        let duplicate = false
+
+        for (s2 of foldedSites) {
+            if (duplicateSites(s1, s2)) {
+                duplicate = true;
+                break;
+            }
+            if (samePlace(s1, s2) && !duplicateSites(s1, s2)) {
+                s2.exposures.push(...s1.exposures);
+                folded = true;
+                break;
+            }
+        }
+        if (duplicate) {
+            continue;
+        }
+        if (!folded) {
+            foldedSites.push(s1);
+        }
+    }
+    return foldedSites;
+}
+
+// Intended to call this function on a schedule, every 30mins or 1hr
+exports.updateAllSites = functions.https.onRequest(async(_, res) => {
+
+    let sites = await paginatedSiteFetch(0, [])
+        .then(sites => sites.map(s => parseRawSite(s)))
+        .then(sites => foldSites(sites))
+        .catch(error => res.status(500).send({ result: "Could not get sites from VIC", error: error }))
+
+    if (sites === undefined || sites.length == 0) {
+        return res.status(200).send({ result: "no sites!" })
+    }
+
+    // TODO: delete collection, see https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
+
+    sites.forEach(site => {
+        getSiteCoords(site)
+            .then(coord => {
+                site.lat = coord.location._latitude;
+                site.lng = coord.location._longitude;
+                admin.firestore().collection("allSites").doc().set(site);
+            }).catch(error => {
+                console.log(`Could not get site coords: ${error}`)
+            })
+    })
+
+    return res.status(200).send({ result: "success" })
 })
+
+exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((context) => {
+    console.log('This will be run every 5 minutes!');
+    return null;
+});
+
+exports.allSites = functions.https.onRequest(async(request, response) => {
+        let allSites = await admin.firestore().collection("allSites").get();
+        console.log(`Returning all sites - num sites: ${allSites.docs.length}`)
+        response.send(allSites.docs.map(site => site.data()));
+    })
+    // PROD: uncomment this line to deploy function to Australian region
+    // exports.coords = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
+    // exports.coords = functions.https.onCall(async(data, context) => {
+
+//     const searchParam = data.site;
+//     const hash = searchParam.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
+
+//     // Can't have forward slash in document id!!
+
+//     let docRef = admin.firestore().collection("sites").doc(hash);
+
+//     return docRef.get().then((doc) => {
+//             if (doc.exists) {
+//                 const coords = doc.data().location;
+//                 console.log("Document exists, returning: ", coords);
+//                 return coords;
+//             } else {
+//                 console.log(`No such document: ${searchParam} - ${hash}`);
+//                 return fetch(getGeocodeUrl(searchParam))
+//                     .then(response => response.json())
+//                     .then(responseJson => {
+//                         const coords = new admin.firestore.GeoPoint(
+//                             responseJson.results[0].geometry.location.lat,
+//                             responseJson.results[0].geometry.location.lng,
+//                         )
+//                         console.log("Fetched data:", coords);
+
+//                         // console.log("Writing to Firestore");
+//                         // admin.firestore().collection('sites').doc(hash).set({ location: coords })
+//                         //     .then(console.log("Successfully wrote new document"))
+//                         //     .catch((error) => {
+//                         //         console.log("Error writing document", error);
+//                         //     });
+//                         // console.log("Returning coords");
+//                         // return coords;
+//                     })
+//                     .catch((error) => {
+//                         console.log("Error getting site coords: ", error);
+//                     })
+//             }
+//         })
+//         .catch((error) => {
+//             console.log("Error getting document: ", error);
+//         });
+// })
 
 // Listens for new messages added to /messages/:documentId/original and creates an
 // uppercase version of the message to /messages/:documentId/uppercase

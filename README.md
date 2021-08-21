@@ -6,16 +6,17 @@
 - [x] Get exposure sites from VIC endpoint and handle pagination
 - [x] Cache exposure sites in localStorage
 - [x] Work on functions backend for getting site coords and updating firestore
-- [ ] Rearchitect event handling, remove user position watching for now
-- [x] Demonstrate calling Functions the proper way
-- [ ] Clean raw exposure site data
-- [ ] Populate rows with all site data
-- [x] Handle public transport sites (which don't have a single address)
-- [ ] Style website
 - [x] Format distance:
+- [x] Demonstrate calling Functions from the frontend the proper way
+- [x] Handle public transport sites (which don't have a single address)
+- [x] Handle duplicate sites and exposures from VIC data, unlikely but possible.
   - < 1km: display in m and round to nearest 10m
   - \> 1km: display in km and round to nearest 100m
-- [x] Handle duplicate sites and exposures from VIC data, unlikely but possible.
+- [ ] Rearchitet backend to get, parse and store sites
+- [ ] Rearchitect frontend to get sites from backend and display with template
+- [ ] Clean raw exposure site data
+- [ ] Populate rows with all site data
+- [ ] Style website
 - [ ] Privacy policy
 - [ ] Terms of use
 - [ ] Productionise app
@@ -31,7 +32,8 @@
 Start emulators (for hosting, functions and firestore):
 
 ```bash
-firebase emulators:start
+firebase emulators:start --import=./<dir-name> --export-on-exit
+# this command will save what's in the emulator's firestore then import it when it starts again
 ```
 
 This hosts everything locally which makes development easy.
@@ -45,3 +47,7 @@ Put your static files (e.g. HTML, CSS, JS) in your app’s deploy directory (the
 ```bash
 firebase deploy --only hosting:covid-exposure-sites-322711
 ```
+
+### Pub/Sub emulator
+
+Is not supported, see documentation here: <https://firebase.google.com/docs/emulator-suite#feature-matrix>
