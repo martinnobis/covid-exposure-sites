@@ -17,21 +17,35 @@ function getHash(rawSite) {
         hash = hash.concat(rawSite.Site_streetaddress);
     }
     // Firestore document ids can't have a forward slash but backslashes are fine
-    return hash.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
+    return hash.toLowerCase().replace(/\s+/g, "").replace(/\//g, "\\");
+}
+
+function getSearchParam(rawSite) {
+    let param = rawSite.Site_title;
+
+    if (rawSite.Site_streetaddress) {
+        param = param.concat(` ${rawSite.Site_streetaddress}`);
+    }
+
+    if (rawSite.Site_postcode) {
+        param = param.concat(` ${rawSite.Site_postcode}`);
+    }
+    return param.replace(/&/g, ""); // Geocode API doesn't like ampersands
 }
 
 function parseRawSite(site) {
     return {
         hash: getHash(site),
         title: site.Site_title,
-        street_address: site.Site_streetaddress,
+        streetAddress: site.Site_streetaddress,
+        searchParam: getSearchParam(site),
         postcode: site.Site_postcode,
         suburb: site.Suburb,
         exposures: [{
             date: site.Exposure_date,
             time: site.Exposure_time,
-            added_date: site.Added_date,
-            added_time: site.Added_time,
+            addedDate: site.Added_date,
+            addedTime: site.Added_time,
             tier: /\d/.exec(site.Advice_title)[0], // not global, so will stop at the first match
             notes: site.Notes,
         }],
@@ -62,22 +76,26 @@ async function getSiteCoords(site) {
         .then(doc => {
             if (doc.exists) {
                 const coord = doc.data();
-                console.log("Coord exists, returning: ", coord);
+                console.log("Coord exists in Firestore already, returning it");
                 return coord;
             } else {
                 console.log(`No such document: ${site.hash}`);
-                fetch(getGeocodeUrl(`${site.title} ${site.street_address} ${site.suburb}`))
+                fetch(getGeocodeUrl(site.searchParam))
                     .then(response => response.json())
                     .then(responseJson => {
+                        if (responseJson.results === undefined || responseJson.results.length == 0) {
+                            console.error(`Geocode API could not get coords for ${site.searchParam}`)
+                            return {
+                                location: new admin.firestore.GeoPoint(0, 0)
+                            }
+                        }
                         const coord = {
                             location: new admin.firestore.GeoPoint(
                                 responseJson.results[0].geometry.location.lat,
                                 responseJson.results[0].geometry.location.lng,
                             )
                         }
-                        console.log("Fetched coord:", coord);
-
-                        console.log("Writing to Firestore");
+                        console.log("Fetched coord, writing to Firestore");
                         admin.firestore().collection('sites').doc(site.hash).set(coord)
                             .then(console.log("Successfully wrote new site coord"))
                             .catch((error) => {
@@ -98,7 +116,7 @@ async function getSiteCoords(site) {
 
 
 function samePlace(s1, s2) {
-    return s1.title == s2.title && s1.street_address == s2.street_address;
+    return s1.title == s2.title && s1.streetAddress == s2.streetAddress;
 }
 
 function duplicateSites(s1, s2) {
@@ -140,13 +158,14 @@ function foldSites(sites) {
 exports.updateAllSites = functions.https.onRequest(async(_, res) => {
 
     let sites = await paginatedSiteFetch(0, [])
-        .then(sites => sites.map(s => parseRawSite(s)))
-        .then(sites => foldSites(sites))
-        .catch(error => res.status(500).send({ result: "Could not get sites from VIC", error: error }))
+        .catch(error => res.status(500).send({ result: "Could not get sites from VIC", error: error }));
 
     if (sites === undefined || sites.length == 0) {
         return res.status(200).send({ result: "no sites!" })
     }
+
+    sites = sites.map(s => parseRawSite(s));
+    sites = foldSites(sites);
 
     // TODO: delete collection, see https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
 
