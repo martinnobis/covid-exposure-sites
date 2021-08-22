@@ -1,15 +1,18 @@
-require('dotenv').config()
 const functions = require("firebase-functions");
+
+require('dotenv').config()
 const fetch = require("node-fetch");
+
+// The Firebase Admin SDK to access Firestore.
+const admin = require('firebase-admin');
+admin.initializeApp();
+
+const sitesCollectionRef = admin.firestore().collection("allSites");
+const coordsCollectionRef = admin.firestore().collection("sites");
 
 function getGeocodeUrl(address) {
     return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&bounds=-34.21832861798514,140.97232382930986|-38.780983886239156,147.920293027031&components=country:AU&key=${process.env.GEOCODE_API_KEY}`
 }
-
-// The Firebase Admin SDK to access Firestore.
-const admin = require('firebase-admin');
-const { parse } = require('dotenv');
-admin.initializeApp();
 
 function getHash(rawSite) {
     let hash = rawSite.Site_title;
@@ -70,47 +73,43 @@ async function paginatedSiteFetch(offset, prevResponse) {
 
 async function getSiteCoords(site) {
 
-    let docRef = admin.firestore().collection("sites").doc(site.hash);
+    let docRef = coordsCollectionRef.doc(site.hash);
 
     return docRef.get()
         .then(doc => {
             if (doc.exists) {
-                const coord = doc.data();
-                console.log("Coord exists in Firestore already, returning it");
-                return coord;
+                functions.logger.log("Coord in Firestore already:", site.title, site.streetAddress);
+                return doc.data();
             } else {
-                console.log(`No such document: ${site.hash}`);
+                functions.logger.log("No such doc:", site.hash);
+
                 fetch(getGeocodeUrl(site.searchParam))
                     .then(response => response.json())
                     .then(responseJson => {
+
                         if (responseJson.results === undefined || responseJson.results.length == 0) {
-                            console.error(`Geocode API could not get coords for ${site.searchParam}`)
-                            return {
-                                location: new admin.firestore.GeoPoint(0, 0)
-                            }
+                            throw new Error("Geocode API could not find coords for:", site.searchParam);
                         }
+
                         const coord = {
                             location: new admin.firestore.GeoPoint(
                                 responseJson.results[0].geometry.location.lat,
                                 responseJson.results[0].geometry.location.lng,
                             )
                         }
-                        console.log("Fetched coord, writing to Firestore");
-                        admin.firestore().collection('sites').doc(site.hash).set(coord)
-                            .then(console.log("Successfully wrote new site coord"))
-                            .catch((error) => {
-                                console.log("Error writing document", error);
-                            });
-                        console.log("Returning coord");
+
+                        functions.logger.log("Fetched coord, writing to Firestore and returning", coord);
+
+                        docRef.set(coord)
+                            .then(functions.logger.log("Successfully wrote new site coord for :", site.searchParam))
+                            .catch(error => functions.logger.error("Error writing document for:", site.searchParam, error));
+
                         return coord;
-                    })
-                    .catch((error) => {
-                        console.log("Error getting site coords: ", error);
                     })
             }
         })
         .catch(error => {
-            console.log("Error getting document: ", error);
+            throw new Error("Error getting document:", doc, error);
         });
 }
 
@@ -167,92 +166,75 @@ exports.updateAllSites = functions.https.onRequest(async(_, res) => {
     sites = sites.map(s => parseRawSite(s));
     sites = foldSites(sites);
 
-    // TODO: delete collection, see https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
+    // From https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
+    await deleteCollection(sitesCollectionRef, 40);
 
-    sites.forEach(site => {
-        getSiteCoords(site)
-            .then(coord => {
-                site.lat = coord.location._latitude;
-                site.lng = coord.location._longitude;
-                admin.firestore().collection("allSites").doc().set(site);
-            }).catch(error => {
-                console.log(`Could not get site coords: ${error}`)
-            })
-    })
+    let sitesWritten = 0;
+    for (site of sites) {
+        const coord = await getSiteCoords(site).catch(error => {
+            functions.logger.error("Could not get site coords", site, error);
+            return null;
+        });
+        if (!coord) {
+            continue;
+        }
+        site.lat = coord.location._latitude;
+        site.lng = coord.location._longitude;
+        sitesCollectionRef.doc().set(site);
+        sitesWritten += 1;
+    }
 
-    return res.status(200).send({ result: "success" })
+    if (sites.length != sitesWritten) {
+        functions.logger.error("num sites:", sites.length);
+        functions.logger.error("sites with coords", sitesWritten);
+        return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
+    }
+
+    return res.status(200).send({ result: "Success" })
 })
+
+async function deleteCollection(collectionRef, batchSize) {
+    const db = admin.firestore();
+    const query = collectionRef.limit(batchSize);
+
+    return new Promise((resolve, reject) => {
+        deleteQueryBatch(db, query, resolve).catch(reject);
+    });
+}
+
+async function deleteQueryBatch(db, query, resolve) {
+    const snapshot = await query.get();
+
+    const batchSize = snapshot.size;
+    if (batchSize === 0) {
+        // When there are no documents left, we are done
+        resolve();
+        return;
+    }
+
+    // Delete documents in a batch
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // Recurse on the next process tick, to avoid
+    // exploding the stack.
+    process.nextTick(() => {
+        deleteQueryBatch(db, query, resolve);
+    });
+}
 
 exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((context) => {
     console.log('This will be run every 5 minutes!');
     return null;
 });
 
-exports.allSites = functions.https.onRequest(async(request, response) => {
-        let allSites = await admin.firestore().collection("allSites").get();
-        console.log(`Returning all sites - num sites: ${allSites.docs.length}`)
-        response.send(allSites.docs.map(site => site.data()));
-    })
-    // PROD: uncomment this line to deploy function to Australian region
-    // exports.coords = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
-    // exports.coords = functions.https.onCall(async(data, context) => {
+exports.getSites = functions.https.onRequest(async(_, response) => {
+    let allSites = await sitesCollectionRef.get();
+    response.send(allSites.docs.map(site => site.data()));
+})
 
-//     const searchParam = data.site;
-//     const hash = searchParam.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
-
-//     // Can't have forward slash in document id!!
-
-//     let docRef = admin.firestore().collection("sites").doc(hash);
-
-//     return docRef.get().then((doc) => {
-//             if (doc.exists) {
-//                 const coords = doc.data().location;
-//                 console.log("Document exists, returning: ", coords);
-//                 return coords;
-//             } else {
-//                 console.log(`No such document: ${searchParam} - ${hash}`);
-//                 return fetch(getGeocodeUrl(searchParam))
-//                     .then(response => response.json())
-//                     .then(responseJson => {
-//                         const coords = new admin.firestore.GeoPoint(
-//                             responseJson.results[0].geometry.location.lat,
-//                             responseJson.results[0].geometry.location.lng,
-//                         )
-//                         console.log("Fetched data:", coords);
-
-//                         // console.log("Writing to Firestore");
-//                         // admin.firestore().collection('sites').doc(hash).set({ location: coords })
-//                         //     .then(console.log("Successfully wrote new document"))
-//                         //     .catch((error) => {
-//                         //         console.log("Error writing document", error);
-//                         //     });
-//                         // console.log("Returning coords");
-//                         // return coords;
-//                     })
-//                     .catch((error) => {
-//                         console.log("Error getting site coords: ", error);
-//                     })
-//             }
-//         })
-//         .catch((error) => {
-//             console.log("Error getting document: ", error);
-//         });
-// })
-
-// Listens for new messages added to /messages/:documentId/original and creates an
-// uppercase version of the message to /messages/:documentId/uppercase
-exports.makeUppercase = functions.firestore.document('/messages/{documentId}')
-    .onCreate((snap, context) => {
-        // Grab the current value of what was written to Firestore.
-        const original = snap.data().original;
-
-        // Access the parameter `{documentId}` with `context.params`
-        functions.logger.log('Uppercasing', context.params.documentId, original);
-
-        const uppercase = original.toUpperCase();
-
-        // You must return a Promise when performing asynchronous tasks inside a Functions such as
-        // writing to Firestore.
-        // Setting an 'uppercase' field in Firestore document returns a Promise.
-        return snap.ref.set({ uppercase }, { merge: true });
-    });
+// PROD: uncomment this line to deploy function to Australian region
+// exports.coords = functions.region("australia-southeast1").https.onRequest(async(req, res) => {

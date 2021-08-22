@@ -5,12 +5,6 @@ let functions = firebase.app().functions()
 // PROD: Comment out line below
 firebase.functions().useEmulator("localhost", 5001);
 
-let getCoords = functions.httpsCallable('coords');
-getCoords({ site: "federation square melbourne" })
-    .then((result) => {
-        console.log(result);
-    });
-
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
     let R = 6370.139; // (km) at lat = -37.81895485084791
@@ -53,6 +47,10 @@ function formatDist(dist_km) {
         // display in m and round to nearest 10m
         const value = Math.round(dist_km * 100) * 10;
         return `${value}m`
+    } else if (dist_km > 100) {
+        // prevent 4 digits
+        const value = Math.round(dist_km);
+        return `${value}km`
     } else {
         // display in km and round to nearest 100m
         const value = dist_km.toFixed(1);
@@ -77,9 +75,14 @@ function populateTable(sites) {
     let table = document.getElementById("exposure-sites").getElementsByTagName("tbody")[0];
     table.innerHTML = "";
     sites.forEach(site => {
+        let siteText = site.title;
+        if (site.streetAddress) {
+            siteText = siteText.concat(` ${site.streetAddress}`);
+        }
+
         let row = table.insertRow();
         row.insertCell(0).innerHTML = site.formattedDist;
-        row.insertCell(1).innerHTML = `${site.title} ${site.street_address}, exposures: ${site.exposures.length}`;
+        row.insertCell(1).innerHTML = `${siteText}, exposures: ${site.exposures.length}`;
         row.insertCell(2).innerHTML = getMaxTier(site);
     })
 }
@@ -92,28 +95,30 @@ async function getUserPosition() {
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
 
+    const userPosLastUpdated = window.localStorage.getItem("userPosLastUpdated");
+
     // Although there is an option to set the timeout for getCurrentPosition, it
     // doesn't seem to work every time. So this function will store the user's
     // position in localStorage and manage when to update it.
-    if (!window.localStorage.getItem("userPosLastUpdated") || parseInt(window.localStorage.getItem("userPosLastUpdated")) < minsToMs(maxAgeMins)) {
+    if (!userPosLastUpdated || parseInt(userPosLastUpdated) < +timeNow - minsToMs(maxAgeMins)) {
         console.log("getting new user position");
 
         const options = { enableHighAccuracy: true, timeout: 5000, maximumAge: minsToMs(maxAgeMins) }
         return new Promise((success, failure) =>
             navigator.geolocation.getCurrentPosition(pos => {
-                window.localStorage.setItem("userLat", pos.coords.latitude)
-                window.localStorage.setItem("userLng", pos.coords.lnggitude)
-                window.localStorage.setItem("userAcc", pos.coords.accuracy);
+                window.localStorage.setItem("lat", pos.coords.latitude)
+                window.localStorage.setItem("lng", pos.coords.longitude)
+                window.localStorage.setItem("acc", pos.coords.accuracy);
                 window.localStorage.setItem("userPosLastUpdated", +timeNow)
-                success({ lat: pos.coords.latitude, lng: pos.coords.latitude, acc: pos.coords.accuracy });
+                success({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
             }, failure, options)
         );
     } else {
         console.log("getting stored user position");
         return {
-            lat: window.localStorage.getItem("userLat"),
-            lng: window.localStorage.getItem("userLng"),
-            acc: window.localStorage.getItem("userAcc")
+            lat: window.localStorage.getItem("lat"),
+            lng: window.localStorage.getItem("lng"),
+            acc: window.localStorage.getItem("acc")
         }
     }
 }
@@ -227,79 +232,57 @@ function cacheSites(sites) {
 }
 
 const minsToMs = mins => mins * 60000;
-
 async function getSites() {
-    const maxAgeMins = 30; // maximum cached sites age
+    const maxAgeMins = 60; // maximum cached sites age
 
-    if (!window.localStorage.getItem("sites") || parseInt(window.localStorage.getItem("sitesLastUpdated")) < minsToMs(maxAgeMins)) {
-        return paginatedFetch(0, []).then(sites => sites.map(site => parseRawSite(site)));
-    } else {
-        return JSON.parse(window.localStorage.getItem("sites"));
-    }
-}
+    const timeNow = Date.now();
+    const sites = window.localStorage.getItem("sites");
 
-// getSites().then(sites => {
-//     cacheSites(sites);
-//     console.log(sites);
-// })
-
-// let mockLat = -37;
-// let mockLng = 144;
-// mockSiteResponse.result.records.forEach(site => {
-//     window.localStorage.setItem(`${site.Site_title} ${site.Site_streetaddress}`, JSON.stringify({ lat: mockLat, lng: mockLng }));
-//     mockLat += 10;
-//     mockLng -= 10;
-// })
-
-// window.localStorage.setItem("home4/76langtonstreet", JSON.stringify({ lat: -37.6964587401896, lng: 144.9143448974064 }))
-// window.localStorage.setItem("littlefrenchie&co342bridgeroad", JSON.stringify({ lat: -37.81895485084791, lng: 145.00274705322926 }));
-// window.localStorage.setItem("gervaseavenueplaygroundcnrbeckettstreetnorthand,gervaseave", JSON.stringify({ lat: -37.69602696953057, lng: 144.91210400953273 }));
-
-async function getSiteCoords(site) {
-    const url = `http://localhost:5001/covid-exposure-sites-322711/us-central1/coords?site=${siteCoordsSearchParam(site)}`;
-    const coords = window.localStorage.getItem(site.hash);
-    if (!coords) {
-        fetch(url)
+    if (!sites || parseInt(window.localStorage.getItem("lastUpdated")) < +timeNow - minsToMs(maxAgeMins)) {
+        return fetch("http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites")
             .then(response => response.json())
             .then(responseJson => {
-                const coordsResponse = {
-                    lat: responseJson.result._latitude,
-                    lng: responseJson.result._longitude
-                }
-                window.localStorage.setItem(site.hash, JSON.stringify(coordsResponse));
-                return coordsResponse;
+                window.localStorage.setItem("sites", JSON.stringify(responseJson));
+                window.localStorage.setItem("lastUpdated", +timeNow);
+                return responseJson;
             })
     } else {
-        return JSON.parse(coords);
+        return JSON.parse(sites);
     }
 }
 
-navigator.geolocation.watchPosition((position) => {
-    const userPos = { lat: position.coords.latitude, lng: position.coords.longitude, acc: position.coords.accuracy };
+function setLastUpdatedMsg() {
+    const lastUpdated = window.localStorage.getItem("lastUpdated");
+    let lastUpdatedMsg = "Never";
+
+    if (lastUpdated) {
+        lastUpdatedMsg = new Date(+lastUpdated)
+            .toLocaleString('en-AU', { hour: 'numeric', minute: 'numeric', hour12: true })
+    }
+    document.getElementById("lastUpdated").innerHTML = `Last updated: ${lastUpdatedMsg}`;
+}
+
+async function main() {
+    const userPos = await getUserPosition();
+    let sites = await getSites();
+    document.getElementById("numSites").innerHTML = `Number of sites: ${sites.length}`;
+    setLastUpdatedMsg();
+
+    sites.forEach(site => {
+        site.dist_km = fastCalcDist(userPos.lat, userPos.lng, site.lat, site.lng);
+        site.formattedDist = formatDist(site.dist_km);
+    })
+
+    sites.sort((a, b) => a.dist_km - b.dist_km);
+
     console.log(userPos);
+    console.log(sites.length);
 
-    getSites().then(sites => {
-        cacheSites(sites);
+    populateTable(sites);
+}
 
-        let sitep = []
-        sites.forEach(site => {
-            sitep.push(
-                getSiteCoords(site).then(coords => {
-                    site.dist_km = fastestCalcDist(coords.lat, coords.lng, userPos.lat, userPos.lng);
-                    site.formattedDist = formatDist(site.dist_km);
-                }))
-        })
+main();
 
-        Promise.all(sitep).then(() => {
-            console.log(sites);
-            populateTable(sites);
-            // sortTable();
-            // styleTable(userPos.acc); // style table based on distance and location accuracy
-        })
 
-    }).catch(error => {
-        console.log("my error");
-        console.log(error.message);
-    });
-
-});
+// sortTable();
+// styleTable(userPos.acc); // style table based on distance and location accuracy
