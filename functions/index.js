@@ -115,7 +115,9 @@ async function getSiteCoords(site) {
 
 
 function samePlace(s1, s2) {
-    return s1.title == s2.title && s1.streetAddress == s2.streetAddress;
+    // Remove punctuation to prevent duplicates from unclean VIC data
+    return s1.title.replace(/[\s+-]/g, "") == s2.title.replace(/[\s+-]/g, "") &&
+        s1.streetAddress.replace(/[\s+-]/g, "") == s2.streetAddress.replace(/[\s+-]/g, "");
 }
 
 function duplicateSites(s1, s2) {

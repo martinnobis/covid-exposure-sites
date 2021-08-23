@@ -77,7 +77,7 @@ function populateTable(sites) {
     sites.forEach(site => {
         let siteText = site.title;
         if (site.streetAddress) {
-            siteText = siteText.concat(` ${site.streetAddress}`);
+            siteText = siteText.concat(`, ${site.streetAddress}`);
         }
 
         let row = table.insertRow();
@@ -115,82 +115,14 @@ async function getUserPosition() {
         );
     } else {
         console.log("getting stored user position");
-        return {
-            lat: window.localStorage.getItem("lat"),
-            lng: window.localStorage.getItem("lng"),
-            acc: window.localStorage.getItem("acc")
-        }
+        const pos = {
+            lat: parseFloat(window.localStorage.getItem("lat")),
+            lng: parseFloat(window.localStorage.getItem("lng")),
+            acc: parseFloat(window.localStorage.getItem("acc"))
+        };
+        return pos;
     }
 }
-
-function getHash(rawSite) {
-    let hash = getCoordsSearchParam(rawSite);
-    // Firestore document ids can't have a forward slash but backslashes are fine
-    return hash.toLowerCase().replace(/\s+/g, "").replace("/", "\\");
-}
-
-function getCoordsSearchParam(rawSite) {
-    let param = rawSite.Site_title;
-    if (rawSite.Site_street_address) {
-        param = param.concat(` ${rawSite.Site_street_address}`)
-    }
-    return param;
-}
-
-function parseRawSite(site) {
-    return {
-        hash: getHash(rawSite),
-        title: site.Site_title,
-        street_address: site.Site_streetaddress,
-        state: site.Site_state,
-        postcode: site.Site_postcode,
-        exposures: [{
-            date: site.Exposure_date,
-            time: site.Exposure_time,
-            added_date: site.Added_date,
-            added_time: site.Added_time,
-            tier: /\d/.exec(site.Advice_title)[0], // not global, so will stop at the first match
-            notes: site.Notes,
-        }],
-    }
-}
-
-function samePlace(s1, s2) {
-    return s1.title == s2.title && s1.street_address == s2.street_address;
-}
-
-function duplicateSites(s1, s2) {
-    return JSON.stringify(s1) == JSON.stringify(s2);
-}
-
-function foldSites(sites) {
-    let foldedSites = [sites[0]]; // add first one
-    for (s1 of sites) {
-        let folded = false
-        let duplicate = false
-
-        for (s2 of foldedSites) {
-            if (duplicateSites(s1, s2)) {
-                duplicate = true;
-                break;
-            }
-            if (samePlace(s1, s2) && !duplicateSites(s1, s2)) {
-                s2.exposures.push(...s1.exposures);
-                folded = true;
-                break;
-            }
-        }
-        if (duplicate) {
-            continue;
-        }
-        if (!folded) {
-            foldedSites.push(s1);
-        }
-    }
-    return foldedSites;
-}
-
-let sitesUrl = offset => `https://discover.data.vic.gov.au/api/3/action/datastore_search?offset=${offset}&resource_id=afb52611-6061-4a2b-9110-74c920bede77`
 
 function paginatedParallelFetch() {
     return fetch(sitesUrl(0))
@@ -274,10 +206,6 @@ async function main() {
     })
 
     sites.sort((a, b) => a.dist_km - b.dist_km);
-
-    console.log(userPos);
-    console.log(sites.length);
-
     populateTable(sites);
 }
 
