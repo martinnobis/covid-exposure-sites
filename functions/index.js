@@ -164,7 +164,7 @@ function foldSites(sites) {
 }
 
 // Intended to call this function on a schedule, every 30mins or 1hr
-exports.updateAllSites = functions.runWith({ timeoutSeconds: 600 }).https.onRequest(async(_, res) => {
+exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
 
     let sites = await paginatedSiteFetch(0, [])
         .catch(error => res.status(500).send({ result: "Could not get sites from VIC", error: error }));
@@ -253,13 +253,15 @@ exports.getSites = functions.https.onRequest(async(req, res) => {
         limit = Math.min(limit, parseInt(req.query.limit));
     }
 
+    const total = await sitesCollectionRef.get().then(docs => docs.size);
+
     // Start after as ids start at 1
     let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
 
     res.status(200).send({
         results: sites.docs.map(site => site.data()),
         offset: offset,
-        total: sites.docs.length
+        total: total
     });
 })
 

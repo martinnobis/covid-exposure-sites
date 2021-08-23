@@ -144,15 +144,16 @@ function paginatedParallelFetch() {
         })
 }
 
-function paginatedFetch(offset, prevResponse) {
+function paginatedSiteFetch(offset, prevResponse) {
+    const sitesUrl = offset => `http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`
     return fetch(sitesUrl(offset))
         .then(response => response.json())
         .then(responseJson => {
-            const response = [...prevResponse, ...responseJson.result.records]; // combine the two arrays
+            const response = [...prevResponse, ...responseJson.results]; // combine the two arrays
 
             offset += 100;
-            if (offset < responseJson.result.total) {
-                return paginatedFetch(offset, response);
+            if (offset < responseJson.total) {
+                return paginatedSiteFetch(offset, response);
             }
             return response;
         });
@@ -171,12 +172,11 @@ async function getSites() {
     const sites = window.localStorage.getItem("sites");
 
     if (!sites || parseInt(window.localStorage.getItem("lastUpdated")) < +timeNow - minsToMs(maxAgeMins)) {
-        return fetch("http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites")
-            .then(response => response.json())
-            .then(responseJson => {
-                window.localStorage.setItem("sites", JSON.stringify(responseJson));
+        return paginatedSiteFetch(0, [])
+            .then(sites => {
+                window.localStorage.setItem("sites", JSON.stringify(sites));
                 window.localStorage.setItem("lastUpdated", +timeNow);
-                return responseJson;
+                return sites;
             })
     } else {
         return JSON.parse(sites);

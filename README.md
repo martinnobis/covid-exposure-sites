@@ -12,20 +12,28 @@
 - [x] Handle duplicate sites and exposures from VIC data, unlikely but possible.
   - < 1km: display in m and round to nearest 10m
   - \> 1km: display in km and round to nearest 100m
-- [ ] Rearchitet backend to get, parse and store sites
-- [ ] Rearchitect frontend to get sites from backend and display with template
-- [ ] Clean raw exposure site data
+- [x] Rearchitet backend to get, parse and store sites
+- [x] Backend: Paginate getSites response
+- [x] Frontend: Get site from paginated getSites endpoint
+- [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
+- [ ] Improve front end lifecyle and error handling
+- [ ] Display sites with template
 - [ ] Populate rows with all site data
+- [ ] Clean raw exposure site data
 - [ ] Style website
 - [ ] Privacy policy
 - [ ] Terms of use
 - [ ] Productionise app
-  - Favicon
-  - Site title/description
-  - SEO
+- [ ] Favicon
+- [ ] Site title/description
+- [ ] Check SEO
 - [ ] Develop release build process:
-  - js minifier
-  - remove console logs
+- [ ] Release: js minifier
+- [ ] Release: Remove console logs
+- [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
+- [ ] Handle flights
+- [ ] Handle public transport
+- [ ] Handle not finding position gracefully and inform user, currently these aren't wriiten to Firestore at all!
 
 ## Development
 
