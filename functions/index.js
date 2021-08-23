@@ -19,8 +19,9 @@ function getHash(rawSite) {
     if (rawSite.Site_streetaddress) {
         hash = hash.concat(rawSite.Site_streetaddress);
     }
-    // Firestore document ids can't have a forward slash but backslashes are fine
-    return hash.toLowerCase().replace(/\s+/g, "").replace(/\//g, "\\");
+    // Firestore document ids can't have forward slashes (backslashes are fine),
+    // remove all punctuation and whitespace anyway
+    return hash.toLowerCase().replace(/[^\w]/g, "");
 }
 
 function getSearchParam(rawSite) {
@@ -33,11 +34,12 @@ function getSearchParam(rawSite) {
     if (rawSite.Site_postcode) {
         param = param.concat(` ${rawSite.Site_postcode}`);
     }
-    return param.replace(/&/g, ""); // Geocode API doesn't like ampersands
+    return encodeURI(param.replace(/&/g, "")); // Geocode API doesn't like ampersands TODO: can remove now that encodeURI is used?
 }
 
 function parseRawSite(site) {
     return {
+        rawId: site._id,
         hash: getHash(site),
         title: site.Site_title,
         streetAddress: site.Site_streetaddress,
@@ -83,7 +85,7 @@ async function getSiteCoords(site) {
             } else {
                 functions.logger.log("No such doc:", site.hash);
 
-                fetch(getGeocodeUrl(site.searchParam))
+                return fetch(getGeocodeUrl(site.searchParam))
                     .then(response => response.json())
                     .then(responseJson => {
 
@@ -115,9 +117,15 @@ async function getSiteCoords(site) {
 
 
 function samePlace(s1, s2) {
-    // Remove punctuation to prevent duplicates from unclean VIC data
-    return s1.title.replace(/[\s+-]/g, "") == s2.title.replace(/[\s+-]/g, "") &&
-        s1.streetAddress.replace(/[\s+-]/g, "") == s2.streetAddress.replace(/[\s+-]/g, "");
+    // Remove punctuation and whitespace to prevent duplicates from unclean VIC data
+    if (s1.streetAddress && s2.streetAddress) {
+        return s1.title.replace(/[^\w]/g, "") == s2.title.replace(/[^\w]/g, "") &&
+            s1.streetAddress.replace(/[^\w]/g, "") == s2.streetAddress.replace(/[^\w]/g, "");
+    } else if (!s1.streetAddress && !s2.streetAddress) {
+        return s1.title.replace(/[^\w]/g, "") == s2.title.replace(/[^\w]/g, "");
+    } else {
+        return false;
+    }
 }
 
 function duplicateSites(s1, s2) {
@@ -156,7 +164,7 @@ function foldSites(sites) {
 }
 
 // Intended to call this function on a schedule, every 30mins or 1hr
-exports.updateAllSites = functions.https.onRequest(async(_, res) => {
+exports.updateAllSites = functions.runWith({ timeoutSeconds: 600 }).https.onRequest(async(_, res) => {
 
     let sites = await paginatedSiteFetch(0, [])
         .catch(error => res.status(500).send({ result: "Could not get sites from VIC", error: error }));
@@ -171,7 +179,7 @@ exports.updateAllSites = functions.https.onRequest(async(_, res) => {
     // From https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
     await deleteCollection(sitesCollectionRef, 40);
 
-    let sitesWritten = 0;
+    let counter = 0;
     for (site of sites) {
         const coord = await getSiteCoords(site).catch(error => {
             functions.logger.error("Could not get site coords", site, error);
@@ -182,13 +190,14 @@ exports.updateAllSites = functions.https.onRequest(async(_, res) => {
         }
         site.lat = coord.location._latitude;
         site.lng = coord.location._longitude;
+        site.id = counter + 1; // VIC data _id starts at 1, might as well align with that
         sitesCollectionRef.doc().set(site);
-        sitesWritten += 1;
+        counter += 1;
     }
 
-    if (sites.length != sitesWritten) {
-        functions.logger.error("num sites:", sites.length);
-        functions.logger.error("sites with coords", sitesWritten);
+    if (sites.length != counter) {
+        functions.logger.error("Total sites:", sites.length);
+        functions.logger.error("Sites with coords and written to Firestore", counter);
         return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
     }
 
@@ -233,9 +242,25 @@ exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((
     return null;
 });
 
-exports.getSites = functions.https.onRequest(async(_, response) => {
-    let allSites = await sitesCollectionRef.get();
-    response.send(allSites.docs.map(site => site.data()));
+exports.getSites = functions.https.onRequest(async(req, res) => {
+    let offset = 0;
+    if (req.query.offset) {
+        offset = parseInt(req.query.offset);
+    }
+
+    let limit = 100;
+    if (req.query.limit) {
+        limit = Math.min(limit, parseInt(req.query.limit));
+    }
+
+    // Start after as ids start at 1
+    let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
+
+    res.status(200).send({
+        results: sites.docs.map(site => site.data()),
+        offset: offset,
+        total: sites.docs.length
+    });
 })
 
 // PROD: uncomment this line to deploy function to Australian region
