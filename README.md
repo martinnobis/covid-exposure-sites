@@ -15,6 +15,8 @@
 - [x] Rearchitet backend to get, parse and store sites
 - [x] Backend: Paginate getSites response
 - [x] Frontend: Get site from paginated getSites endpoint
+- [x] Add Bootstrap
+- [ ] Add Google Analytics
 - [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
 - [x] Add 'site under development' banner
 - [x] Improve front end lifecyle and error handling

@@ -51,8 +51,11 @@ h1 {
     color: #0052c2
 }
 
+table {
+    margin-bottom: 100px;
+}
+
 .construction-footer {
-    background-color: rgb(255, 208, 0);
     width: 100%;
     text-align: center;
     padding: .5em;
