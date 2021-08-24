@@ -1,3 +1,44 @@
+/* CSS reset */
+
+html {
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ol,
+ul {
+    margin: 0;
+    padding: 0;
+    font-weight: normal;
+}
+
+ol,
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* Start */
+
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 body {
     font-family: 'Roboto', sans-serif;
@@ -8,4 +49,13 @@ body {
 
 h1 {
     color: #0052c2
+}
+
+.construction-footer {
+    background-color: rgb(255, 208, 0);
+    width: 100%;
+    text-align: center;
+    padding: .5em;
+    position: fixed;
+    bottom: 0;
 }

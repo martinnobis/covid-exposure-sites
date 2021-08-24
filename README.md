@@ -16,6 +16,7 @@
 - [x] Backend: Paginate getSites response
 - [x] Frontend: Get site from paginated getSites endpoint
 - [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
+- [x] Add 'site under development' banner
 - [x] Improve front end lifecyle and error handling
 - [ ] Display sites with template
 - [ ] Populate rows with all site data
@@ -33,6 +34,8 @@
 - [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
 - [ ] Handle flights
 - [ ] Handle public transport
+- [ ] Don't display VICs address for site, but use the one fetched from Google API (it'd be more consistent)
+- [ ] Add hyperlink to address to open Google Maps to location
 - [ ] Handle not finding position gracefully and inform user, currently these aren't wriiten to Firestore at all!
 
 ## Development
