@@ -34,6 +34,7 @@ function fastCalcDist(lat1, lng1, lat2, lng2) {
 
 function fastestCalcDist(lat1, lng1, lat2, lng2) {
     // pythagoras
+    // I don't think this one is accurate, it shouldn't be used
     return 111 * Math.sqrt(Math.pow((lat2 - lat1) * Math.cos(lat1), 2) + Math.pow(lng2 - lng1, 2));
 }
 
@@ -91,6 +92,13 @@ function styleTable(userAcc) {
 
 }
 
+function cacheUserPosition(lat, lng, acc) {
+    window.localStorage.setItem("lat", lat)
+    window.localStorage.setItem("lng", lng)
+    window.localStorage.setItem("acc", acc);
+    window.localStorage.setItem("userPosLastUpdated", +Date.now())
+}
+
 async function getUserPosition() {
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
@@ -106,16 +114,13 @@ async function getUserPosition() {
         const options = { enableHighAccuracy: true, timeout: 5000, maximumAge: minsToMs(maxAgeMins) }
         return new Promise((success, failure) =>
             navigator.geolocation.getCurrentPosition(pos => {
-                window.localStorage.setItem("lat", pos.coords.latitude)
-                window.localStorage.setItem("lng", pos.coords.longitude)
-                window.localStorage.setItem("acc", pos.coords.accuracy);
-                window.localStorage.setItem("userPosLastUpdated", +timeNow)
-                success({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
+                success({ changed: true, lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
             }, failure, options)
         );
     } else {
         console.log("getting stored user position");
         const pos = {
+            changed: false,
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
             acc: parseFloat(window.localStorage.getItem("acc"))
@@ -187,7 +192,7 @@ function getCachedSites() {
 }
 
 function setLastUpdatedMsg() {
-    const lastUpdated = window.localStorage.getItem("lastUpdated");
+    const lastUpdated = window.localStorage.getItem("sitesLastUpdated");
     let lastUpdatedMsg = "Never";
 
     if (lastUpdated) {
@@ -197,58 +202,65 @@ function setLastUpdatedMsg() {
     document.getElementById("lastUpdated").innerHTML = `Last updated: ${lastUpdatedMsg}`;
 }
 
-async function main() {
-    const userPos = await getUserPosition();
-
+async function getSitesParallel() {
     let sites = getCachedSites();
+    if (sites) {
+        return { changed: false, sites: sites };
+    } else {
+        // fetch first batch to get totalSites then do the rest in parallel
+        return paginatedOffsetSiteFetch(0)
+            .then(firstResponse => {
 
-    let offset = 0;
-    if (!sites) {
-        console.log("sites not cached, fetching...");
+                const totalSites = firstResponse.total;
+                let offset = 100;
 
-        let sitePromises = [];
+                let remainingSitePs = [];
+                while (offset < totalSites) {
+                    remainingSitePs.push(paginatedOffsetSiteFetch(offset))
+                    offset += 100;
+                }
 
-        let firstSites = await paginatedOffsetSiteFetch(offset);
-
-        sitePromises.push(
-            new Promise((resolve, reject) => {
-                firstSites.results.forEach(site => {
-                    site.dist_km = calcDist(userPos.lat, userPos.lng, site.lat, site.lng);
-                    site.formattedDist = formatDist(site.dist_km);
-                })
-                resolve(firstSites.results);
-            })
-        )
-
-        const totalSites = firstSites.total;
-        offset += 100;
-
-        while (offset < totalSites) {
-            let remainingSitesResponse = paginatedOffsetSiteFetch(offset);
-            sitePromises.push(
-                remainingSitesResponse.then(res => {
-                    res.results.forEach(site => {
-                        site.dist_km = calcDist(userPos.lat, userPos.lng, site.lat, site.lng);
-                        site.formattedDist = formatDist(site.dist_km);
+                return Promise.all(remainingSitePs).then(remainingSiteResponses => {
+                    // collate sites (probably a better way of doing this)
+                    let s = firstResponse.results;
+                    remainingSiteResponses.forEach(res => {
+                        s = [...s, ...res.results];
                     })
-                    return res.results;
+                    return { changed: true, sites: s };
                 })
-            )
-            offset += 100;
-        }
-        sites = await Promise.all(sitePromises).then(s => s.flat());
+            });
     }
+}
 
-    document.getElementById("numSites").innerHTML = `Number of sites: ${sites.length}`;
-    setLastUpdatedMsg();
+async function main() {
+    const parallelTasks = [getUserPosition(), getSitesParallel()];
 
-    sites.forEach(site => {
-        site.dist_km = fastCalcDist(userPos.lat, userPos.lng, site.lat, site.lng);
-        site.formattedDist = formatDist(site.dist_km);
-    })
+    Promise.all(parallelTasks).then(values => {
+        let pos = values[0];
+        let sitesVal = values[1];
 
-    sites.sort((a, b) => a.dist_km - b.dist_km);
-    populateTable(sites);
+        if (pos.changed) {
+            cacheUserPosition(pos.lat, pos.lng, pos.acc);
+        }
+
+        if (pos.changed || sitesVal.changed) {
+            sitesVal.sites.forEach(site => {
+                site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
+                site.formattedDist = formatDist(site.dist_km);
+            });
+        }
+
+        if (sitesVal.changed) {
+            cacheSites(sitesVal.sites);
+        }
+
+        document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
+        setLastUpdatedMsg();
+
+        sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
+        populateTable(sitesVal.sites);
+
+    });
 }
 
 main();

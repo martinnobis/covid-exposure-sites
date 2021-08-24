@@ -16,7 +16,7 @@
 - [x] Backend: Paginate getSites response
 - [x] Frontend: Get site from paginated getSites endpoint
 - [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
-- [ ] Improve front end lifecyle and error handling
+- [x] Improve front end lifecyle and error handling
 - [ ] Display sites with template
 - [ ] Populate rows with all site data
 - [ ] Clean raw exposure site data
