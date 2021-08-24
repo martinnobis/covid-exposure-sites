@@ -144,6 +144,13 @@ function paginatedParallelFetch() {
         })
 }
 
+async function paginatedOffsetSiteFetch(offset) {
+    const sitesUrl = `http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`
+    return fetch(sitesUrl)
+        .then(response => response.json())
+        .then(responseJson => responseJson);
+}
+
 function paginatedSiteFetch(offset, prevResponse) {
     const sitesUrl = offset => `http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`
     return fetch(sitesUrl(offset))
@@ -165,19 +172,15 @@ function cacheSites(sites) {
 }
 
 const minsToMs = mins => mins * 60000;
-async function getSites() {
+
+function getCachedSites() {
     const maxAgeMins = 60; // maximum cached sites age
 
     const timeNow = Date.now();
     const sites = window.localStorage.getItem("sites");
 
     if (!sites || parseInt(window.localStorage.getItem("lastUpdated")) < +timeNow - minsToMs(maxAgeMins)) {
-        return paginatedSiteFetch(0, [])
-            .then(sites => {
-                window.localStorage.setItem("sites", JSON.stringify(sites));
-                window.localStorage.setItem("lastUpdated", +timeNow);
-                return sites;
-            })
+        return null;
     } else {
         return JSON.parse(sites);
     }
@@ -196,7 +199,46 @@ function setLastUpdatedMsg() {
 
 async function main() {
     const userPos = await getUserPosition();
-    let sites = await getSites();
+
+    let sites = getCachedSites();
+
+    let offset = 0;
+    if (!sites) {
+        console.log("sites not cached, fetching...");
+
+        let sitePromises = [];
+
+        let firstSites = await paginatedOffsetSiteFetch(offset);
+
+        sitePromises.push(
+            new Promise((resolve, reject) => {
+                firstSites.results.forEach(site => {
+                    site.dist_km = calcDist(userPos.lat, userPos.lng, site.lat, site.lng);
+                    site.formattedDist = formatDist(site.dist_km);
+                })
+                resolve(firstSites.results);
+            })
+        )
+
+        const totalSites = firstSites.total;
+        offset += 100;
+
+        while (offset < totalSites) {
+            let remainingSitesResponse = paginatedOffsetSiteFetch(offset);
+            sitePromises.push(
+                remainingSitesResponse.then(res => {
+                    res.results.forEach(site => {
+                        site.dist_km = calcDist(userPos.lat, userPos.lng, site.lat, site.lng);
+                        site.formattedDist = formatDist(site.dist_km);
+                    })
+                    return res.results;
+                })
+            )
+            offset += 100;
+        }
+        sites = await Promise.all(sitePromises).then(s => s.flat());
+    }
+
     document.getElementById("numSites").innerHTML = `Number of sites: ${sites.length}`;
     setLastUpdatedMsg();
 
