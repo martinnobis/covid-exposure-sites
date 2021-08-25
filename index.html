@@ -7,6 +7,19 @@
     <title>Covid-19 exposure sites near me</title>
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1YFWXV08HE"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'G-1YFWXV08HE');
+    </script>
 </head>
 
 <body>
@@ -14,16 +27,18 @@
     <p id="numSites">Number of sites: 0</p>
     <p id="lastUpdated">Last updated: Never</p>
 
-    <table id="exposure-sites">
-        <thead>
-            <tr>
-                <th>Distance</th>
-                <th>Site</th>
-                <th>Tier</th>
-            </tr>
-        </thead>
-        <tbody id="table-body"> </tbody>
-    </table>
+    <div class="d-flex justify-content-center">
+        <table id="sites" class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Tier</th>
+                    <th scope="col">Site</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"> </tbody>
+        </table>
+    </div>
 
     <div class="construction-footer bg-warning bg-gradient">
         <small class="font-monospace">

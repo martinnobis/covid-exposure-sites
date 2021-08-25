@@ -51,7 +51,13 @@ h1 {
     color: #0052c2
 }
 
-table {
+@media (min-width: 576px) {
+    #sites {
+        width: 80%;
+    }
+}
+
+#sites {
     margin-bottom: 100px;
 }
 

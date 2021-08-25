@@ -73,7 +73,7 @@ function getMaxTier(site) {
 
 function populateTable(sites) {
     console.log("populating table");
-    let table = document.getElementById("exposure-sites").getElementsByTagName("tbody")[0];
+    let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
     table.innerHTML = "";
     sites.forEach(site => {
         let siteText = site.title;
@@ -83,8 +83,19 @@ function populateTable(sites) {
 
         let row = table.insertRow();
         row.insertCell(0).innerHTML = site.formattedDist;
-        row.insertCell(1).innerHTML = `${siteText}, exposures: ${site.exposures.length}`;
-        row.insertCell(2).innerHTML = getMaxTier(site);
+        row.insertCell(1).innerHTML = getMaxTier(site);
+        if (site.streetAddress) {
+            row.insertCell(2).innerHTML =
+                `
+                <div><div class="fw-bold">${site.title}</div>${site.streetAddress}, exposures: ${site.exposures.length}</div>
+            `;
+        } else {
+            row.insertCell(2).innerHTML =
+                `
+                <div><div class="fw-bold">${site.title}</div>exposures: ${site.exposures.length}</div>
+            `;
+
+        }
     })
 }
 
