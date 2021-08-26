@@ -38,11 +38,6 @@ function fastestCalcDist(lat1, lng1, lat2, lng2) {
     return 111 * Math.sqrt(Math.pow((lat2 - lat1) * Math.cos(lat1), 2) + Math.pow(lng2 - lng1, 2));
 }
 
-function sortTable() {
-    // console.log("sorting table")
-    // TODO
-}
-
 function formatDist(dist_km) {
     if (dist_km < 1) {
         // display in m and round to nearest 10m
@@ -150,14 +145,14 @@ function cacheUserPosition(lat, lng, acc) {
     window.localStorage.setItem("lat", lat)
     window.localStorage.setItem("lng", lng)
     window.localStorage.setItem("acc", acc);
-    window.localStorage.setItem("userPosLastUpdated", +Date.now())
+    window.localStorage.setItem("userPosLastCached", +Date.now())
 }
 
 async function getUserPosition() {
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
 
-    const userPosLastUpdated = window.localStorage.getItem("userPosLastUpdated");
+    const userPosLastUpdated = window.localStorage.getItem("userPosLastCached");
 
     // Although there is an option to set the timeout for getCurrentPosition, it
     // doesn't seem to work every time. So this function will store the user's
@@ -205,7 +200,7 @@ function paginatedParallelFetch() {
 
 async function paginatedOffsetSiteFetch(offset) {
     const sitesUrl = `
-    http: //localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`;
+    http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`;
     return fetch(sitesUrl)
         .then(response => response.json())
         .then(responseJson => responseJson);
@@ -228,7 +223,12 @@ function paginatedSiteFetch(offset, prevResponse) {
 
 function cacheSites(sites) {
     window.localStorage.setItem("sites", JSON.stringify(sites));
-    window.localStorage.setItem("sitesLastUpdated", +Date.now())
+    window.localStorage.setItem("sitesLastCached", +Date.now())
+}
+
+function prettyTime(ms) {
+    // Example, returns 4:52 PM
+    return new Date(ms).toLocaleString('en-AU', { hour: 'numeric', minute: 'numeric', hour12: true })
 }
 
 const minsToMs = mins => mins * 60000;
@@ -239,22 +239,11 @@ function getCachedSites() {
     const timeNow = Date.now();
     const sites = window.localStorage.getItem("sites");
 
-    if (!sites || parseInt(window.localStorage.getItem("sitesLastUpdated")) < +timeNow - minsToMs(maxAgeMins)) {
+    if (!sites || parseInt(window.localStorage.getItem("sitesLastCached")) < +timeNow - minsToMs(maxAgeMins)) {
         return null;
     } else {
         return JSON.parse(sites);
     }
-}
-
-function setLastUpdatedMsg() {
-    const lastUpdated = window.localStorage.getItem("sitesLastUpdated");
-    let lastUpdatedMsg = "Never";
-
-    if (lastUpdated) {
-        lastUpdatedMsg = new Date(+lastUpdated)
-            .toLocaleString('en-AU', { hour: 'numeric', minute: 'numeric', hour12: true })
-    }
-    document.getElementById("lastUpdated").innerHTML = `Last updated: ${lastUpdatedMsg}`;
 }
 
 async function getSitesParallel() {
@@ -266,22 +255,21 @@ async function getSitesParallel() {
         return paginatedOffsetSiteFetch(0)
             .then(firstResponse => {
 
-                const totalSites = firstResponse.total;
                 let offset = 100;
-
                 let remainingSitePs = [];
-                while (offset < totalSites) {
+
+                while (offset < firstResponse.total) {
                     remainingSitePs.push(paginatedOffsetSiteFetch(offset))
                     offset += 100;
                 }
 
                 return Promise.all(remainingSitePs).then(remainingSiteResponses => {
-                    // collate sites (probably a better way of doing this)
+                    // collate sites (there's probably a better way of doing this)
                     let s = firstResponse.results;
                     remainingSiteResponses.forEach(res => {
                         s = [...s, ...res.results];
                     })
-                    return { changed: true, sites: s };
+                    return { changed: true, sites: s, lastUpdated: firstResponse.lastUpdated };
                 })
             });
     }
@@ -343,19 +331,17 @@ async function main() {
         const numExposures = sitesVal.sites.reduce((a, b) => {
             return a + b.exposures.length;
         }, 0);
+        document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
+
         document.getElementById("userPos").innerHTML = `Your position: [${convertToDms(pos.lat, false)}, ${convertToDms(pos.lng, true)}]`;
         document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
-        document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
-        setLastUpdatedMsg();
+
+        console.log(sitesVal.lastUpdated);
+        document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
 
         sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
         populateTable(sitesVal.sites, pos);
-
     });
 }
 
 main();
-
-
-// sortTable();
-// styleTable(userPos.acc); // style table based on distance and location accuracy

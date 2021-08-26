@@ -268,14 +268,20 @@ exports.getSites = functions.https.onRequest(async(req, res) => {
     let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
 
     // Get last update success time
-    let lastUpdated = await metadataCollectionRef.doc("lastUpdateSuccess").get().then(doc => doc.time);
+    let lastUpdatedDocRef = metadataCollectionRef.doc("lastUpdateSuccess");
 
-    res.status(200).send({
-        results: sites.docs.map(site => site.data()),
-        offset: offset,
-        total: total,
-        lastUpdated: lastUpdated
-    });
+    const lastUpdated = await lastUpdatedDocRef.get().then(doc => doc.data().time);
+
+    if (!lastUpdated) {
+        return res.status(500).send({ result: "500 - could not get lastUpdated value from Firestore." });
+    } else {
+        return res.status(200).send({
+            results: sites.docs.map(site => site.data()),
+            offset: offset,
+            total: total,
+            lastUpdated: lastUpdated
+        });
+    }
 })
 
 // PROD: uncomment this line to deploy function to Australian region

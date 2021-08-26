@@ -47,8 +47,9 @@
 Start emulators (for hosting, functions and firestore):
 
 ```bash
-firebase emulators:start --import=./<dir-name> --export-on-exit
+lsof -ti tcp:8080 | xargs kill
 # this command will save what's in the emulator's firestore then import it when it starts again
+firebase emulators:start --import=./emulator_data --export-on-exit
 ```
 
 This hosts everything locally which makes development easy.
