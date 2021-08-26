@@ -200,7 +200,7 @@ function paginatedParallelFetch() {
 
 async function paginatedOffsetSiteFetch(offset) {
     const sitesUrl = `
-    http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`;
+    http://localhost:5001/covid-exposure-sites-322711/australia-southeast1/getSites?offset=${offset}`;
     return fetch(sitesUrl)
         .then(response => response.json())
         .then(responseJson => responseJson);
@@ -221,9 +221,10 @@ function paginatedSiteFetch(offset, prevResponse) {
         });
 }
 
-function cacheSites(sites) {
-    window.localStorage.setItem("sites", JSON.stringify(sites));
+function cacheSites(sitesVal) {
+    window.localStorage.setItem("sites", JSON.stringify(sitesVal.sites));
     window.localStorage.setItem("sitesLastCached", +Date.now())
+    window.localStorage.setItem("sitesLastUpdated", sitesVal.lastUpdated)
 }
 
 function prettyTime(ms) {
@@ -238,18 +239,19 @@ function getCachedSites() {
 
     const timeNow = Date.now();
     const sites = window.localStorage.getItem("sites");
+    const lastUpdated = window.localStorage.getItem("sitesLastUpdated");
 
     if (!sites || parseInt(window.localStorage.getItem("sitesLastCached")) < +timeNow - minsToMs(maxAgeMins)) {
         return null;
     } else {
-        return JSON.parse(sites);
+        return { sites: JSON.parse(sites), lastUpdated: lastUpdated }
     }
 }
 
 async function getSitesParallel() {
-    let sites = getCachedSites();
-    if (sites) {
-        return { changed: false, sites: sites };
+    let sitesVal = getCachedSites();
+    if (sitesVal) {
+        return { changed: false, sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
     } else {
         // fetch first batch to get totalSites then do the rest in parallel
         return paginatedOffsetSiteFetch(0)
@@ -294,7 +296,7 @@ async function main() {
         }
 
         if (sitesVal.changed) {
-            cacheSites(sitesVal.sites);
+            cacheSites(sitesVal);
         }
 
         // TODO

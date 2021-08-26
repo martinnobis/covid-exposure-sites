@@ -56,13 +56,25 @@ This hosts everything locally which makes development easy.
 
 ## Deployment
 
-### When you're ready, deploy your web app
+Deploy Functions first so that I get the URLs of the endpoints to put into the frontend.
 
-Put your static files (e.g. HTML, CSS, JS) in your app’s deploy directory (the default is 'public'). Then, run this command from your app’s root directory:
+Just Functions:
 
 ```bash
-firebase deploy --only hosting:covid-exposure-sites-322711
+firebase deploy --only functions
+
+# Deploy a single function with
+firebase deploy --only "functions:getSites"
 ```
+
+Put your static files (e.g. HTML, CSS, JS) in your app’s deploy directory (the default is 'public'). Then, run this command from your app’s root directory.
+
+Just Hosting:
+
+```bash
+firebase deploy --only hosting
+```
+
 
 ### Pub/Sub emulator
 

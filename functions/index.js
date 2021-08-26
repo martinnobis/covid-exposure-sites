@@ -164,8 +164,10 @@ function foldSites(sites) {
     return foldedSites;
 }
 
-// Intended to call this function on a schedule, every 30mins or 1hr
-exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
+
+// exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((context) => {
+// exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
+exports.updateAllSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 1 hour").onRun(async(context) => {
 
     let sites = await paginatedSiteFetch(0, [])
         .catch(error => {
@@ -175,7 +177,8 @@ exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequ
 
     if (sites === undefined || sites.length == 0) {
         metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
-        return res.status(200).send({ result: "no sites!" })
+        // return res.status(200).send({ result: "no sites!" })
+        return;
     }
 
     sites = sites.map(s => parseRawSite(s));
@@ -204,13 +207,14 @@ exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequ
         functions.logger.error("Total sites:", sites.length);
         functions.logger.error("Sites with coords and written to Firestore", counter);
         metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
-        return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
+        // return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
+        return;
     }
 
     // Create document containing metadata (last updated etc.)
     metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
 
-    return res.status(200).send({ result: "Success" })
+    // return res.status(200).send({ result: "Success" })
 })
 
 async function deleteCollection(collectionRef, batchSize) {
@@ -246,12 +250,10 @@ async function deleteQueryBatch(db, query, resolve) {
     });
 }
 
-exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((context) => {
-    console.log('This will be run every 5 minutes!');
-    return null;
-});
+exports.getSites = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
 
-exports.getSites = functions.https.onRequest(async(req, res) => {
+    res.set('Access-Control-Allow-Origin', '*'); // CORS
+
     let offset = 0;
     if (req.query.offset) {
         offset = parseInt(req.query.offset);
@@ -263,6 +265,16 @@ exports.getSites = functions.https.onRequest(async(req, res) => {
     }
 
     const total = await sitesCollectionRef.get().then(docs => docs.size);
+
+    if (!total) {
+        // No sites!
+        return res.status(200).send({
+            results: [],
+            offset: offset,
+            total: 0,
+            lastUpdated: 0
+        });
+    }
 
     // Start after as ids start at 1
     let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
