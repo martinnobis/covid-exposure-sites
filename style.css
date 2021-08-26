@@ -51,14 +51,17 @@ h1 {
     color: #0052c2
 }
 
-@media (min-width: 576px) {
+@media (min-width: 768px) {
     #sites {
-        width: 80%;
+        max-width: 80%;
     }
 }
 
-#sites {
-    margin-bottom: 100px;
+table tr td:first-child {
+    text-align: center;
+    vertical-align: middle;
+    font-weight: bold;
+    letter-spacing: 0.05em;
 }
 
 .construction-footer {
@@ -67,4 +70,13 @@ h1 {
     padding: .5em;
     position: fixed;
     bottom: 0;
+}
+
+svg {
+    color: green;
+}
+
+a:hover {
+    color: #0d6efd!important;
+    text-decoration: underline;
 }

@@ -68,10 +68,10 @@ function getMaxTier(site) {
             return minExp;
         }
     })
-    return exposureWithMaxTier.tier
+    return parseInt(exposureWithMaxTier.tier);
 }
 
-function populateTable(sites) {
+function populateTable(sites, userPos) {
     console.log("populating table");
     let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
     table.innerHTML = "";
@@ -81,26 +81,69 @@ function populateTable(sites) {
             siteText = siteText.concat(`, ${site.streetAddress}`);
         }
 
+        let distance = site.formattedDist;
+
+        let distCellClasses = ["text-light", "bg-gradient"]
+        if (site.dist_km * 1000 < userPos.acc) {
+            distance = `<${Math.ceil(userPos.acc / 10) * 10}m`
+            distCellClasses.push("bg-dark");
+        } else if (site.dist_km < 0.050) {
+            distCellClasses.push("bg-danger");
+        } else if (site.dist_km < 0.200) {
+            distCellClasses.push("bg-warning");
+        } else if (site.dist_km < 1) {
+            distCellClasses.push("bg-secondary");
+        } else if (site.dist_km < 5) {
+            distCellClasses.push("bg-primary");
+        } else {
+            distCellClasses = ["text-dark", "bg-transparent"];
+        }
+
+        const tier = getMaxTier(site);
         let row = table.insertRow();
-        row.insertCell(0).innerHTML = site.formattedDist;
-        row.insertCell(1).innerHTML = getMaxTier(site);
+        row.insertCell(0).innerHTML = distance;
+        distCellClasses.forEach(c => {
+            row.cells[0].classList.add(c);
+        })
+
+        let badge = ""
+        if (tier === 1) {
+            badge = `<span class="badge bg-danger">Tier ${tier}</span>`;
+        } else if (tier === 2) {
+            badge = `<span class="badge bg-warning">Tier ${tier}</span>`;
+        } else {
+            badge = `<span class="badge bg-secondary">Tier ${tier}</span>`;
+        }
+
         if (site.streetAddress) {
-            row.insertCell(2).innerHTML =
+            row.insertCell(1).innerHTML =
                 `
-                <div><div class="fw-bold">${site.title}</div>${site.streetAddress}, exposures: ${site.exposures.length}</div>
+                <div>${badge}<div class="fw-bold">${site.title}</div>${site.streetAddress}, exposures: ${site.exposures.length}</div>
             `;
         } else {
-            row.insertCell(2).innerHTML =
+            row.insertCell(1).innerHTML =
                 `
-                <div><div class="fw-bold">${site.title}</div>exposures: ${site.exposures.length}</div>
+                <div>${badge}<div class="fw-bold">${site.title}</div>exposures: ${site.exposures.length}</div>
             `;
 
         }
     })
 }
 
-function styleTable(userAcc) {
+function convertToDms(dd, isLng) {
+    const direction = dd < 0 ?
+        isLng ? 'W' : 'S' :
+        isLng ? 'E' : 'N';
 
+    const absDd = Math.abs(dd);
+    const deg = absDd | 0;
+    const frac = absDd - deg;
+    const min = (frac * 60) | 0;
+    let sec = frac * 3600 - min * 60;
+    // Round it to 2 decimal points.
+    sec = Math.round(sec * 100) / 100;
+
+    return `${deg}° ${min}' ${sec}" ${direction}`;
 }
 
 function cacheUserPosition(lat, lng, acc) {
@@ -161,7 +204,8 @@ function paginatedParallelFetch() {
 }
 
 async function paginatedOffsetSiteFetch(offset) {
-    const sitesUrl = `http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`
+    const sitesUrl = `
+    http: //localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`;
     return fetch(sitesUrl)
         .then(response => response.json())
         .then(responseJson => responseJson);
@@ -195,7 +239,7 @@ function getCachedSites() {
     const timeNow = Date.now();
     const sites = window.localStorage.getItem("sites");
 
-    if (!sites || parseInt(window.localStorage.getItem("lastUpdated")) < +timeNow - minsToMs(maxAgeMins)) {
+    if (!sites || parseInt(window.localStorage.getItem("sitesLastUpdated")) < +timeNow - minsToMs(maxAgeMins)) {
         return null;
     } else {
         return JSON.parse(sites);
@@ -265,11 +309,47 @@ async function main() {
             cacheSites(sitesVal.sites);
         }
 
+        // TODO
+        const rowTemplate =
+            `
+                <div>
+            
+
+                </div>
+            `;
+
+
+        function initialize() {
+            var input = document.getElementById('searchTextField');
+            var autocomplete = new google.maps.places.Autocomplete(input);
+            google.maps.event.addListener(autocomplete, 'place_changed', function() {
+                var place = autocomplete.getPlace();
+                document.getElementById('cityLat').innerHTML = place.geometry.location.lat();
+                document.getElementById('cityLng').innerHTML = place.geometry.location.lng();
+            });
+        }
+        google.maps.event.addDomListener(window, 'load', initialize);
+
+        initialize();
+
+
+
+
+
+
+
+
+
+        const numExposures = sitesVal.sites.reduce((a, b) => {
+            return a + b.exposures.length;
+        }, 0);
+        document.getElementById("userPos").innerHTML = `Your position: [${convertToDms(pos.lat, false)}, ${convertToDms(pos.lng, true)}]`;
         document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
+        document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
         setLastUpdatedMsg();
 
         sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
-        populateTable(sitesVal.sites);
+        populateTable(sitesVal.sites, pos);
 
     });
 }

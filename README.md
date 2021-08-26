@@ -30,12 +30,14 @@
 - [ ] Favicon
 - [ ] Site title/description
 - [ ] Check SEO
+- [ ] Add a scroll to top button
 - [ ] Develop release build process:
 - [ ] Release: js minifier
 - [ ] Release: Remove console logs
 - [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
 - [ ] Handle flights
 - [ ] Handle public transport (tram route titles are really long)
+- [ ] Add ability to change position by entering an address using the Google autocomplete address widget (see commented out code)
 - [ ] Don't display VICs address for site, but use the one fetched from Google API (it'd be more consistent)
 - [ ] Add hyperlink to address to open Google Maps to location
 - [ ] Handle not finding site position gracefully and inform user, currently these aren't wriiten to Firestore at all!

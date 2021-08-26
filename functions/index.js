@@ -9,6 +9,7 @@ admin.initializeApp();
 
 const sitesCollectionRef = admin.firestore().collection("allSites");
 const coordsCollectionRef = admin.firestore().collection("sites");
+const metadataCollectionRef = admin.firestore().collection("metadata");
 
 function getGeocodeUrl(address) {
     return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&bounds=-34.21832861798514,140.97232382930986|-38.780983886239156,147.920293027031&components=country:AU&key=${process.env.GEOCODE_API_KEY}`
@@ -167,9 +168,13 @@ function foldSites(sites) {
 exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
 
     let sites = await paginatedSiteFetch(0, [])
-        .catch(error => res.status(500).send({ result: "Could not get sites from VIC", error: error }));
+        .catch(error => {
+            metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
+            res.status(500).send({ result: "Could not get sites from VIC", error: error })
+        });
 
     if (sites === undefined || sites.length == 0) {
+        metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
         return res.status(200).send({ result: "no sites!" })
     }
 
@@ -198,8 +203,12 @@ exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequ
     if (sites.length != counter) {
         functions.logger.error("Total sites:", sites.length);
         functions.logger.error("Sites with coords and written to Firestore", counter);
+        metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
         return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
     }
+
+    // Create document containing metadata (last updated etc.)
+    metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
 
     return res.status(200).send({ result: "Success" })
 })
@@ -258,10 +267,14 @@ exports.getSites = functions.https.onRequest(async(req, res) => {
     // Start after as ids start at 1
     let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
 
+    // Get last update success time
+    let lastUpdated = await metadataCollectionRef.doc("lastUpdateSuccess").get().then(doc => doc.time);
+
     res.status(200).send({
         results: sites.docs.map(site => site.data()),
         offset: offset,
-        total: total
+        total: total,
+        lastUpdated: lastUpdated
     });
 })
 
