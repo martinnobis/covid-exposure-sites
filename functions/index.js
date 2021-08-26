@@ -8,6 +8,7 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const sitesCollectionRef = admin.firestore().collection("allSites");
+const noLocationSitesCollectionRef = admin.firestore().collection("noLocationSites");
 const coordsCollectionRef = admin.firestore().collection("sites");
 const metadataCollectionRef = admin.firestore().collection("metadata");
 
@@ -39,22 +40,34 @@ function getSearchParam(rawSite) {
 }
 
 function parseRawSite(site) {
-    return {
-        rawId: site._id,
-        hash: getHash(site),
-        title: site.Site_title,
-        streetAddress: site.Site_streetaddress,
-        searchParam: getSearchParam(site),
-        postcode: site.Site_postcode,
-        suburb: site.Suburb,
-        exposures: [{
-            date: site.Exposure_date,
-            time: site.Exposure_time,
-            addedDate: site.Added_date,
-            addedTime: site.Added_time,
-            tier: /\d/.exec(site.Advice_title)[0], // not global, so will stop at the first match
-            notes: site.Notes,
-        }],
+
+    let tier = "N/A";
+    if (site.Advice_title) {
+        // Some sites don't have this field!
+        tier = /\d/.exec(site.Advice_title)[0]; // not global, so will stop at the first match
+    }
+
+    try {
+        return {
+            rawId: site._id,
+            hash: getHash(site),
+            title: site.Site_title,
+            streetAddress: site.Site_streetaddress,
+            searchParam: getSearchParam(site),
+            postcode: site.Site_postcode,
+            suburb: site.Suburb,
+            exposures: [{
+                date: site.Exposure_date,
+                time: site.Exposure_time,
+                addedDate: site.Added_date,
+                addedTime: site.Added_time,
+                tier: tier,
+                notes: site.Notes,
+            }],
+        }
+    } catch (error) {
+        console.error(error, site);
+        throw error;
     }
 }
 
@@ -169,15 +182,17 @@ function foldSites(sites) {
 // exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
 exports.updateAllSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 1 hour").onRun(async(context) => {
 
+    // TODO: Not quite true, can fail this function...
+    metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
+
     let sites = await paginatedSiteFetch(0, [])
         .catch(error => {
-            metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
-            res.status(500).send({ result: "Could not get sites from VIC", error: error })
+            console.error("Could not fetch sites!", error);
         });
 
     if (sites === undefined || sites.length == 0) {
         metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
-        // return res.status(200).send({ result: "no sites!" })
+        console.log("No sites!");
         return;
     }
 
@@ -190,6 +205,7 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
     let counter = 0;
     for (site of sites) {
         const coord = await getSiteCoords(site).catch(error => {
+            noLocationSitesCollectionRef.doc().set(site)
             functions.logger.error("Could not get site coords", site, error);
             return null;
         });
@@ -210,11 +226,6 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         // return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
         return;
     }
-
-    // Create document containing metadata (last updated etc.)
-    metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
-
-    // return res.status(200).send({ result: "Success" })
 })
 
 async function deleteCollection(collectionRef, batchSize) {

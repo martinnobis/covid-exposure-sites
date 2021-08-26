@@ -56,7 +56,10 @@ function formatDist(dist_km) {
 
 function getMaxTier(site) {
     const exposureWithMaxTier = site.exposures.reduce((minExp, e) => {
-        if (e.tier < minExp.tier) {
+        if (e.tier === "N/A") {
+            // Some sites don't have this set!
+            return minExp.tier;
+        } else if (e.tier < minExp.tier) {
             // max tier is 1
             return e;
         } else {

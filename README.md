@@ -54,6 +54,13 @@ firebase emulators:start --import=./emulator_data --export-on-exit
 
 This hosts everything locally which makes development easy.
 
+Test a function using the shell (for use with the emulator when it's on or otherwise for production functions)
+
+```bash
+firebase functions:shell
+firebase> updateAllSites() # this way I can run updateAllSites myself in production
+```
+
 ## Deployment
 
 Deploy Functions first so that I get the URLs of the endpoints to put into the frontend.
