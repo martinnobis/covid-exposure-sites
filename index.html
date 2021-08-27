@@ -55,6 +55,34 @@
         </small>
     </div>
 
+    <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+
+            <!-- <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"> -->
+            <div id="posToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-body">
+                    <div class="spinner-border text-primary" style="width: 1em; height: 1em;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Getting position...
+                </div>
+            </div>
+            <!-- </div> -->
+
+            <!-- <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11"> -->
+            <div id="sitesToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-body">
+                    <div class="spinner-border text-primary" style="width: 1em; height: 1em;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Downloading sites...
+                </div>
+            </div>
+            <!-- </div> -->
+
+        </div>
+    </div>
+
     <div class="container">
         <footer class="py-3 my-4">
             <div class="d-flex justify-content-center">

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-uglifyjs script.js -o public/script.min.js
+uglifyjs script.js -o public/script.min.js -c drop_console
 
 html-minifier \
     --collapse-whitespace \

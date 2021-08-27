@@ -1,6 +1,6 @@
 // PROD: Flip lines below
-// let functions = firebase.app().functions("australia-southeast1")
-let functions = firebase.app().functions()
+let functions = firebase.app().functions("australia-southeast1")
+    // let functions = firebase.app().functions()
 
 // PROD: Comment out line below
 // firebase.functions().useEmulator("localhost", 5001);
@@ -152,6 +152,9 @@ function cacheUserPosition(lat, lng, acc) {
 }
 
 async function getUserPosition() {
+
+    posToast.show();
+
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
 
@@ -164,20 +167,30 @@ async function getUserPosition() {
         console.log("getting new user position");
 
         const options = { enableHighAccuracy: true, timeout: 5000, maximumAge: minsToMs(maxAgeMins) }
-        return new Promise((success, failure) =>
+        return new Promise((success, failure) => {
             navigator.geolocation.getCurrentPosition(pos => {
-                success({ changed: true, lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
-            }, failure, options)
-        );
+
+                posToast.hide();
+
+                success({
+                    changed: true,
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    acc: pos.coords.accuracy
+                });
+            }, failure, options);
+        });
     } else {
         console.log("getting stored user position");
-        const pos = {
+
+        posToast.hide();
+
+        return {
             changed: false,
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
             acc: parseFloat(window.localStorage.getItem("acc"))
         };
-        return pos;
     }
 }
 
@@ -250,8 +263,12 @@ function getCachedSites() {
 }
 
 async function getSitesParallel() {
+
+    sitesToast.show();
+
     let sitesVal = getCachedSites();
     if (sitesVal) {
+        sitesToast.hide();
         return { changed: false, sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
     } else {
         // fetch first batch to get totalSites then do the rest in parallel
@@ -272,13 +289,20 @@ async function getSitesParallel() {
                     remainingSiteResponses.forEach(res => {
                         s = [...s, ...res.results];
                     })
+
+                    sitesToast.hide();
+
                     return { changed: true, sites: s, lastUpdated: firstResponse.lastUpdated };
                 })
-            });
+            })
     }
 }
 
+const posToast = new bootstrap.Toast(document.getElementById("posToast"), { autohide: false })
+const sitesToast = new bootstrap.Toast(document.getElementById("sitesToast"), { autohide: false })
+
 async function main() {
+
     const parallelTasks = [getUserPosition(), getSitesParallel()];
 
     Promise.all(parallelTasks).then(values => {
