@@ -180,9 +180,9 @@ function foldSites(sites) {
 
 // exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((context) => {
 // exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
-exports.updateAllSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 1 hour").onRun(async(context) => {
+exports.updateAllSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 60 minutes").onRun(async(context) => {
 
-    // TODO: Not quite true, can fail this function...
+    // TODO: Not quite true, this function can still fail...
     metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
 
     let sites = await paginatedSiteFetch(0, [])

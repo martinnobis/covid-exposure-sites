@@ -26,13 +26,13 @@
 - [ ] Style website
 - [ ] Privacy policy
 - [ ] Terms of use
-- [ ] Productionise app
+- [x] Productionise app (see instructions below)
 - [ ] Favicon
 - [ ] Site title/description
 - [ ] Check SEO
 - [ ] Add a scroll to top button
-- [ ] Develop release build process:
-- [ ] Release: js minifier
+- [x] Develop release build process:
+- [x] Release: js minifier
 - [ ] Release: Remove console logs
 - [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
 - [ ] Handle flights
@@ -40,7 +40,7 @@
 - [ ] Add ability to change position by entering an address using the Google autocomplete address widget (see commented out code)
 - [ ] Don't display VICs address for site, but use the one fetched from Google API (it'd be more consistent)
 - [ ] Add hyperlink to address to open Google Maps to location
-- [ ] Handle not finding site position gracefully and inform user, currently these aren't wriiten to Firestore at all!
+- [ ] Handle not finding site position gracefully and inform user, currently these aren't written to Firestore at all!
 
 ## Development
 
@@ -65,7 +65,7 @@ firebase> updateAllSites() # this way I can run updateAllSites myself in product
 
 Deploy Functions first so that I get the URLs of the endpoints to put into the frontend.
 
-Just Functions:
+### Functions
 
 ```bash
 firebase deploy --only functions
@@ -74,11 +74,11 @@ firebase deploy --only functions
 firebase deploy --only "functions:getSites"
 ```
 
-Put your static files (e.g. HTML, CSS, JS) in your app’s deploy directory (the default is 'public'). Then, run this command from your app’s root directory.
+### Hosting
 
-Just Hosting:
 
 ```bash
+npm run deploy
 firebase deploy --only hosting
 ```
 

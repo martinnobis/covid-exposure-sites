@@ -3,7 +3,7 @@
 let functions = firebase.app().functions()
 
 // PROD: Comment out line below
-firebase.functions().useEmulator("localhost", 5001);
+// firebase.functions().useEmulator("localhost", 5001);
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -202,8 +202,8 @@ function paginatedParallelFetch() {
 }
 
 async function paginatedOffsetSiteFetch(offset) {
-    const sitesUrl = `
-    http://localhost:5001/covid-exposure-sites-322711/australia-southeast1/getSites?offset=${offset}`;
+    const sitesUrl = `https://australia-southeast1-covid-exposure-sites-322711.cloudfunctions.net/getSites?offset=${offset}`;
+    // const sitesUrl = `http://localhost:5001/covid-exposure-sites-322711/australia-southeast1/getSites?offset=${offset}`; 
     return fetch(sitesUrl)
         .then(response => response.json())
         .then(responseJson => responseJson);
@@ -225,9 +225,8 @@ function paginatedSiteFetch(offset, prevResponse) {
 }
 
 function cacheSites(sitesVal) {
-    window.localStorage.setItem("sites", JSON.stringify(sitesVal.sites));
+    window.localStorage.setItem("sitesVal", JSON.stringify({ sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated }));
     window.localStorage.setItem("sitesLastCached", +Date.now())
-    window.localStorage.setItem("sitesLastUpdated", sitesVal.lastUpdated)
 }
 
 function prettyTime(ms) {
@@ -241,13 +240,12 @@ function getCachedSites() {
     const maxAgeMins = 60; // maximum cached sites age
 
     const timeNow = Date.now();
-    const sites = window.localStorage.getItem("sites");
-    const lastUpdated = window.localStorage.getItem("sitesLastUpdated");
+    const sitesVal = window.localStorage.getItem("sitesVal");
 
-    if (!sites || parseInt(window.localStorage.getItem("sitesLastCached")) < +timeNow - minsToMs(maxAgeMins)) {
+    if (!sitesVal || parseInt(window.localStorage.getItem("sitesLastCached")) < +timeNow - minsToMs(maxAgeMins)) {
         return null;
     } else {
-        return { sites: JSON.parse(sites), lastUpdated: lastUpdated }
+        return JSON.parse(sitesVal);
     }
 }
 
@@ -306,24 +304,21 @@ async function main() {
         const rowTemplate =
             `
                 <div>
-            
-
                 </div>
             `;
 
+        // function initialize() {
+        //     var input = document.getElementById('searchTextField');
+        //     var autocomplete = new google.maps.places.Autocomplete(input);
+        //     google.maps.event.addListener(autocomplete, 'place_changed', function() {
+        //         var place = autocomplete.getPlace();
+        //         document.getElementById('cityLat').innerHTML = place.geometry.location.lat();
+        //         document.getElementById('cityLng').innerHTML = place.geometry.location.lng();
+        //     });
+        // }
+        // google.maps.event.addDomListener(window, 'load', initialize);
 
-        function initialize() {
-            var input = document.getElementById('searchTextField');
-            var autocomplete = new google.maps.places.Autocomplete(input);
-            google.maps.event.addListener(autocomplete, 'place_changed', function() {
-                var place = autocomplete.getPlace();
-                document.getElementById('cityLat').innerHTML = place.geometry.location.lat();
-                document.getElementById('cityLng').innerHTML = place.geometry.location.lng();
-            });
-        }
-        google.maps.event.addDomListener(window, 'load', initialize);
-
-        initialize();
+        // initialize();
 
 
 
@@ -341,7 +336,6 @@ async function main() {
         document.getElementById("userPos").innerHTML = `Your position: [${convertToDms(pos.lat, false)}, ${convertToDms(pos.lng, true)}]`;
         document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
 
-        console.log(sitesVal.lastUpdated);
         document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
 
         sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);

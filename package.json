@@ -1,1 +1,10 @@
-{}
+{
+    "scripts": {
+        "deploy": "./deploy-frontend.sh"
+    },
+    "devDependencies": {
+        "cssnano-cli": "^1.0.5",
+        "html-minifier": "^4.0.0",
+        "uglify-js": "^3.14.1"
+    }
+}

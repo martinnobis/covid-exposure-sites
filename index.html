@@ -6,9 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Covid-19 exposure sites near me</title>
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.min.css">
 
+    <!--
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script>
+    -->
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1YFWXV08HE"></script>
@@ -32,9 +34,11 @@
     <p id="numExposures">Number of exposures:</p>
     <p id="lastUpdated">Last updated: Never</p>
 
+    <!--
     <input id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
     <p id="cityLat">Chosen lat</p>
     <p id="cityLng">Chosen lng</p>
+-->
 
     <div class="d-flex justify-content-center">
         <table id="sites" class="table table-hover">
@@ -89,8 +93,14 @@
 <script src="/__/firebase/8.9.1/firebase-analytics.js"></script>
 <script src="/__/firebase/8.9.1/firebase-functions.js"></script>
 <!-- PROD: Remove useEmulator -->
+<!--
 <script src="/__/firebase/init.js?useEmulator=true"></script>
+-->
+<script src="/__/firebase/init.js"></script>
 <script src="bootstrap/bootstrap.bundle.min.js"></script>
+<script src="script.min.js"></script>
+<!--
 <script src="script.js"></script>
+-->
 
 </html>
