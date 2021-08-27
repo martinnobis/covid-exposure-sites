@@ -72,7 +72,6 @@ function parseRawSite(site) {
 }
 
 async function paginatedSiteFetch(offset, prevResponse) {
-    // TODO: Can turn this into a generator
     let sitesUrl = `https://discover.data.vic.gov.au/api/3/action/datastore_search?offset=${offset}&resource_id=afb52611-6061-4a2b-9110-74c920bede77`
     return fetch(sitesUrl)
         .then(response => response.json())
@@ -178,8 +177,6 @@ function foldSites(sites) {
 }
 
 
-// exports.scheduledFunction = functions.pubsub.schedule('every 5 minutes').onRun((context) => {
-// exports.updateAllSites = functions.runWith({ timeoutSeconds: 540 }).https.onRequest(async(_, res) => {
 exports.updateAllSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 60 minutes").onRun(async(context) => {
 
     // TODO: Not quite true, this function can still fail...
@@ -201,12 +198,13 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
 
     // From https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
     await deleteCollection(sitesCollectionRef, 40);
+    await noLocationSitesCollectionRef(sitesCollectionRef, 40);
 
     let counter = 0;
     for (site of sites) {
         const coord = await getSiteCoords(site).catch(error => {
             noLocationSitesCollectionRef.doc().set(site)
-            functions.logger.error("Could not get site coords", site, error);
+            functions.logger.warn("Could not get site coords", site, error);
             return null;
         });
         if (!coord) {
@@ -223,7 +221,6 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         functions.logger.error("Total sites:", sites.length);
         functions.logger.error("Sites with coords and written to Firestore", counter);
         metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
-        // return res.status(500).send({ result: "Could not get coords for all sites, check logs." })
         return;
     }
 })
@@ -292,11 +289,11 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
 
     // Get last update success time
     let lastUpdatedDocRef = metadataCollectionRef.doc("lastUpdateSuccess");
-
     const lastUpdated = await lastUpdatedDocRef.get().then(doc => doc.data().time);
 
     if (!lastUpdated) {
-        return res.status(500).send({ result: "500 - could not get lastUpdated value from Firestore." });
+        console.error("Could not get lastUpdated value from Firestore.")
+        return res.status(500).send({ result: "500 - Internal server error." });
     } else {
         return res.status(200).send({
             results: sites.docs.map(site => site.data()),
@@ -306,6 +303,3 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
         });
     }
 })
-
-// PROD: uncomment this line to deploy function to Australian region
-// exports.coords = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
