@@ -198,7 +198,7 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
 
     // From https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
     await deleteCollection(sitesCollectionRef, 40);
-    await noLocationSitesCollectionRef(sitesCollectionRef, 40);
+    await deleteCollection(noLocationSitesCollectionRef, 40);
 
     let counter = 0;
     for (site of sites) {
@@ -213,6 +213,11 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         site.lat = coord.location._latitude;
         site.lng = coord.location._longitude;
         site.id = counter + 1; // VIC data _id starts at 1, might as well align with that
+
+        // Not needed on the client side, save space and bandwidth this way
+        delete site.hash;
+        delete site.searchParam;
+
         sitesCollectionRef.doc().set(site);
         counter += 1;
     }

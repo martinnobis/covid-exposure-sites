@@ -23,6 +23,8 @@
 - [ ] Display sites with template
 - [ ] Populate rows with all site data
 - [ ] Clean raw exposure site data
+- [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
+- [ ] Handle getting user position timeout
 - [ ] Style website
 - [ ] Privacy policy
 - [ ] Terms of use
