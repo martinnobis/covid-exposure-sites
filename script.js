@@ -70,31 +70,43 @@ function getMaxTier(site) {
 }
 
 function populateTable(sites, userPos) {
-    console.log("populating table");
     let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
-    table.innerHTML = "";
+
+    table.innerHTML = ""; // clear table
+
     sites.forEach(site => {
         let siteText = site.title;
         if (site.streetAddress) {
             siteText = siteText.concat(`, ${site.streetAddress}`);
         }
 
-        let distance = site.formattedDist;
-
-        let distCellClasses = ["text-light", "bg-gradient"]
-        if (site.dist_km * 1000 < userPos.acc) {
-            distance = `<${Math.ceil(userPos.acc / 10) * 10}m`
-            distCellClasses.push("bg-dark");
-        } else if (site.dist_km < 0.050) {
-            distCellClasses.push("bg-danger");
-        } else if (site.dist_km < 0.200) {
-            distCellClasses.push("bg-warning");
-        } else if (site.dist_km < 1) {
-            distCellClasses.push("bg-secondary");
-        } else if (site.dist_km < 5) {
-            distCellClasses.push("bg-primary");
+        let distCellClasses = ["bg-gradient"]
+        let distance = "";
+        if (!userPos || !site.formattedDist || !site.dist_km) {
+            distCellClasses.push("text-dark");
+            distance = `<span class="
+            loader__dot ">?</span><span class="
+            loader__dot ">?</span><span class="
+            loader__dot ">?</span>`;
         } else {
-            distCellClasses = ["text-dark", "bg-transparent"];
+            distance = site.formattedDist;
+
+            distCellClasses.push("text-light");
+
+            if (site.dist_km * 1000 < userPos.acc) {
+                distance = `<${Math.ceil(userPos.acc / 10) * 10}m`
+                distCellClasses.push("bg-dark");
+            } else if (site.dist_km < 0.050) {
+                distCellClasses.push("bg-danger");
+            } else if (site.dist_km < 0.200) {
+                distCellClasses.push("bg-warning");
+            } else if (site.dist_km < 1) {
+                distCellClasses.push("bg-secondary");
+            } else if (site.dist_km < 5) {
+                distCellClasses.push("bg-primary");
+            } else {
+                distCellClasses = ["text-dark", "bg-transparent"];
+            }
         }
 
         const tier = getMaxTier(site);
@@ -166,9 +178,11 @@ async function getUserPosition() {
     if (!userPosLastUpdated || parseInt(userPosLastUpdated) < +timeNow - minsToMs(maxAgeMins)) {
         console.log("getting new user position");
 
-        const options = { enableHighAccuracy: true, timeout: 5000, maximumAge: minsToMs(maxAgeMins) }
+        const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: minsToMs(maxAgeMins) }
         return new Promise((success, failure) => {
             navigator.geolocation.getCurrentPosition(pos => {
+
+                cacheUserPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
 
                 posToast.hide();
 
@@ -178,7 +192,9 @@ async function getUserPosition() {
                     lng: pos.coords.longitude,
                     acc: pos.coords.accuracy
                 });
-            }, failure, options);
+            }, error => {
+                failure(error);
+            }, options);
         });
     } else {
         console.log("getting stored user position");
@@ -239,7 +255,7 @@ function paginatedSiteFetch(offset, prevResponse) {
 }
 
 function cacheSites(sitesVal) {
-    window.localStorage.setItem("sitesVal", JSON.stringify({ sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated }));
+    window.localStorage.setItem("sitesVal", JSON.stringify(sitesVal));
     window.localStorage.setItem("sitesLastCached", +Date.now())
 }
 
@@ -273,10 +289,11 @@ async function getSites() {
 
         sitesToast.hide();
 
-        return { changed: false, sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
+        return { changed: false, sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
     } else {
         return offsetSiteFetch(0, 10000)
             .then(sitesVal => {
+                cacheSites(sitesVal);
                 sitesToast.hide();
                 return { changed: true, sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
             });
@@ -324,26 +341,22 @@ const sitesToast = new bootstrap.Toast(document.getElementById("sitesToast"), { 
 
 async function main() {
 
-    const parallelTasks = [getUserPosition(), getSites()];
+    const parallelTasks = [
+        getUserPosition().catch(error => console.error(error)),
+        getSites().then(sitesVal => {
+            populateTable(sitesVal.sites, null); // populate with ???
+            return sitesVal;
+        })
+    ];
 
     Promise.all(parallelTasks).then(values => {
         let pos = values[0];
         let sitesVal = values[1];
 
-        if (pos.changed) {
-            cacheUserPosition(pos.lat, pos.lng, pos.acc);
-        }
-
-        if (pos.changed || sitesVal.changed) {
-            sitesVal.sites.forEach(site => {
-                site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
-                site.formattedDist = formatDist(site.dist_km);
-            });
-        }
-
-        if (sitesVal.changed) {
-            cacheSites(sitesVal);
-        }
+        sitesVal.sites.forEach(site => {
+            site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
+            site.formattedDist = formatDist(site.dist_km);
+        });
 
         // TODO
         const rowTemplate =
