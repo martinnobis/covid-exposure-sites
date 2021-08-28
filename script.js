@@ -214,8 +214,8 @@ function paginatedParallelFetch() {
         })
 }
 
-async function paginatedOffsetSiteFetch(offset) {
-    const sitesUrl = `https://australia-southeast1-covid-exposure-sites-322711.cloudfunctions.net/getSites?offset=${offset}`;
+async function offsetSiteFetch(offset, limit) {
+    const sitesUrl = `https://australia-southeast1-covid-exposure-sites-322711.cloudfunctions.net/getSites?offset=${offset}&limit=${limit}`;
     // const sitesUrl = `http://localhost:5001/covid-exposure-sites-322711/australia-southeast1/getSites?offset=${offset}`; 
     return fetch(sitesUrl)
         .then(response => response.json())
@@ -262,7 +262,27 @@ function getCachedSites() {
     }
 }
 
-async function getSitesParallel() {
+async function getSites() {
+    // No parallel, get all at once
+
+    sitesToast.show();
+
+    let sitesVal = getCachedSites();
+    if (sitesVal) {
+
+        sitesToast.hide();
+
+        return { changed: false, sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
+    } else {
+        return offsetSiteFetch(0, 10000)
+            .then(sitesVal => {
+                sitesToast.hide();
+                return { changed: true, sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
+            });
+    }
+}
+
+async function getSitesParallel(batchSize) {
 
     sitesToast.show();
 
@@ -272,15 +292,15 @@ async function getSitesParallel() {
         return { changed: false, sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
     } else {
         // fetch first batch to get totalSites then do the rest in parallel
-        return paginatedOffsetSiteFetch(0)
+        return offsetSiteFetch(0, batchSize)
             .then(firstResponse => {
 
-                let offset = 100;
+                let offset = batchSize;
                 let remainingSitePs = [];
 
                 while (offset < firstResponse.total) {
-                    remainingSitePs.push(paginatedOffsetSiteFetch(offset))
-                    offset += 100;
+                    remainingSitePs.push(offsetSiteFetch(offset, batchSize))
+                    offset += batchSize;
                 }
 
                 return Promise.all(remainingSitePs).then(remainingSiteResponses => {
@@ -303,7 +323,7 @@ const sitesToast = new bootstrap.Toast(document.getElementById("sitesToast"), { 
 
 async function main() {
 
-    const parallelTasks = [getUserPosition(), getSitesParallel()];
+    const parallelTasks = [getUserPosition(), getSites()];
 
     Promise.all(parallelTasks).then(values => {
         let pos = values[0];

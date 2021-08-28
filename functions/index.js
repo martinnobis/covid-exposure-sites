@@ -203,6 +203,7 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
     let counter = 0;
     for (site of sites) {
         const coord = await getSiteCoords(site).catch(error => {
+            // Don't delete hash and searchParam in this case as it's useful for debugging
             noLocationSitesCollectionRef.doc().set(site)
             functions.logger.warn("Could not get site coords", site, error);
             return null;
@@ -267,6 +268,15 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
 
     res.set('Access-Control-Allow-Origin', '*'); // CORS
 
+    // Get last update success time
+    const lastUpdated = await metadataCollectionRef.doc("lastUpdateSuccess").get()
+        .then(doc => doc.data().time);
+
+    if (!lastUpdated) {
+        console.error("Could not get lastUpdated value from Firestore.")
+        return res.status(500).send({ result: "500 - Internal server error." });
+    }
+
     let offset = 0;
     if (req.query.offset) {
         offset = parseInt(req.query.offset);
@@ -274,10 +284,21 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
 
     let limit = 100;
     if (req.query.limit) {
-        limit = Math.min(limit, parseInt(req.query.limit));
+        limit = parseInt(req.query.limit);
     }
 
-    const total = await sitesCollectionRef.get().then(docs => docs.size);
+    if (limit < 1) {
+        // No sites requested!
+        return res.status(200).send({
+            results: [],
+            offset: offset,
+            total: 0,
+            lastUpdated: lastUpdated
+        });
+    }
+
+    const total = await sitesCollectionRef.get()
+        .then(docs => docs.size);
 
     if (!total) {
         // No sites!
@@ -292,19 +313,10 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
     // Start after as ids start at 1
     let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
 
-    // Get last update success time
-    let lastUpdatedDocRef = metadataCollectionRef.doc("lastUpdateSuccess");
-    const lastUpdated = await lastUpdatedDocRef.get().then(doc => doc.data().time);
-
-    if (!lastUpdated) {
-        console.error("Could not get lastUpdated value from Firestore.")
-        return res.status(500).send({ result: "500 - Internal server error." });
-    } else {
-        return res.status(200).send({
-            results: sites.docs.map(site => site.data()),
-            offset: offset,
-            total: total,
-            lastUpdated: lastUpdated
-        });
-    }
+    return res.status(200).send({
+        results: sites.docs.map(site => site.data()),
+        offset: offset,
+        total: total,
+        lastUpdated: lastUpdated
+    });
 })
