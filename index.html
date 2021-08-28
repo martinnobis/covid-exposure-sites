@@ -34,6 +34,31 @@
     <p id="numExposures">Number of exposures:</p>
     <p id="lastUpdated">Last updated: Never</p>
 
+    <!-- <div class="dropdown">
+        <button class="btn btn-light border border-dark dropdown-toggle" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+            Options
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
+            <div class="px-4 py-3">
+                <div class="mb-3">
+                    <label style="margin-right: 20px;">Show sites within 1km only</label>
+                    <input type="range" class="form-range" min="1" max="100" step="1" id="customRange3">
+                    <hr class="dropdown-divider">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="showPublicTransportSwitch">
+                        <label class="form-check-label" for="showPublicTransportSwitch">Show public transport</label>
+                    </div>
+                    <hr class="dropdown-divider">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="showFlightsSwitch">
+                        <label class="form-check-label" for="showFlightsSwitch">Show flights</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+
     <!-- <input id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
     <p id="cityLat">Chosen lat</p> -->
 
@@ -58,19 +83,19 @@
     <div aria-live="polite" aria-atomic="true" class="position-relative">
         <div class="toast-container position-fixed bottom-0 end-0 p-3">
 
-            <div id="posToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div id="posToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
                 <div class="toast-body">
                     <div class="spinner-border text-primary" style="width: 1em; height: 1em;" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">Getting position...</span>
                     </div>
                     Getting position...
                 </div>
             </div>
 
-            <div id="sitesToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div id="sitesToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
                 <div class="toast-body">
                     <div class="spinner-border text-primary" style="width: 1em; height: 1em;" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">Downloading sites...</span>
                     </div>
                     Downloading sites...
                 </div>
@@ -115,13 +140,13 @@
 <script src="/__/firebase/8.9.1/firebase-functions.js"></script>
 
 <!-- PROD: Remove useEmulator -->
-<!-- <script src="/__/firebase/init.js?useEmulator=true"></script> -->
-<script src="/__/firebase/init.js"></script>
+<script src="/__/firebase/init.js?useEmulator=true"></script>
+<!-- <script src="/__/firebase/init.js"></script> -->
 
 <script src="bootstrap/bootstrap.bundle.min.js"></script>
 
 <!-- PROD: use minified -->
-<script src="script.min.js"></script>
-<!-- <script src="script.js"></script> -->
+<!-- <script src="script.min.js"></script> -->
+<script src="script.js"></script>
 
 </html>

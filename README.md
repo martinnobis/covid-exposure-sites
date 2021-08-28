@@ -26,6 +26,7 @@
 - [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
 - [ ] Handle getting user position timeout
 - [ ] Style website
+- [ ] Handle not getting user pos; 1. timeout (increase timeout or ask user to reload page) 2. ask user to give permission if denied.
 - [ ] Privacy policy
 - [ ] Terms of use
 - [x] Productionise app (see instructions below)
@@ -35,7 +36,7 @@
 - [ ] Add a scroll to top button
 - [x] Develop release build process:
 - [x] Release: js minifier
-- [ ] Release: Remove console logs
+- [x] Release: Remove console logs
 - [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
 - [ ] Handle flights
 - [ ] Handle public transport (tram route titles are really long)
