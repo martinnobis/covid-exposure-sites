@@ -193,7 +193,16 @@ async function getUserPosition() {
                     acc: pos.coords.accuracy
                 });
             }, error => {
-                failure(error);
+
+                posToast.hide();
+
+                if (error.code === 1) {
+                    posPermissionDeniedToast.show();
+                } else if (error.code === 2) {
+                    posUnavailableToast.show();
+                } else if (error.code === 3) {
+                    posTimeoutToast.show();
+                }
             }, options);
         });
     } else {
@@ -336,8 +345,12 @@ async function getSitesParallel(batchSize) {
     }
 }
 
-const posToast = new bootstrap.Toast(document.getElementById("posToast"), { autohide: false })
-const sitesToast = new bootstrap.Toast(document.getElementById("sitesToast"), { autohide: false })
+const posToast = new bootstrap.Toast(document.getElementById("posToast"), { autohide: false });
+const sitesToast = new bootstrap.Toast(document.getElementById("sitesToast"), { autohide: false });
+
+const posPermissionDeniedToast = new bootstrap.Toast(document.getElementById("posPermissionDeniedToast"), { autohide: false });
+const posUnavailableToast = new bootstrap.Toast(document.getElementById("posUnavailableToast"), { autohide: false });
+const posTimeoutToast = new bootstrap.Toast(document.getElementById("posTimeoutToast"), { autohide: false });
 
 async function main() {
 
@@ -377,14 +390,6 @@ async function main() {
         // google.maps.event.addDomListener(window, 'load', initialize);
 
         // initialize();
-
-
-
-
-
-
-
-
 
         const numExposures = sitesVal.sites.reduce((a, b) => {
             return a + b.exposures.length;

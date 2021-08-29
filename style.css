@@ -98,3 +98,8 @@ a:hover {
 .loader__dot:nth-child(3) {
     animation-delay: 500ms;
 }
+
+.bi-exclamation-triangle {
+    width: 1.5em;
+    height: 1.5em;
+}
