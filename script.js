@@ -355,7 +355,7 @@ const posTimeoutToast = new bootstrap.Toast(document.getElementById("posTimeoutT
 async function main() {
 
     const parallelTasks = [
-        getUserPosition().catch(error => console.error(error)),
+        getUserPosition(),
         getSites().then(sitesVal => {
             populateTable(sitesVal.sites, null); // populate with ???
             return sitesVal;
