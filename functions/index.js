@@ -12,6 +12,8 @@ const noLocationSitesCollectionRef = admin.firestore().collection("noLocationSit
 const coordsCollectionRef = admin.firestore().collection("sites");
 const metadataCollectionRef = admin.firestore().collection("metadata");
 
+const dateFormat = new Intl.DateTimeFormat('en-AU', { weekday: "short", year: "2-digit", month: "numeric", day: 'numeric' });
+
 function getGeocodeUrl(address) {
     return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&bounds=-34.21832861798514,140.97232382930986|-38.780983886239156,147.920293027031&components=country:AU&key=${process.env.GEOCODE_API_KEY}`
 }
@@ -57,10 +59,10 @@ function parseRawSite(site) {
             postcode: site.Site_postcode,
             suburb: site.Suburb,
             exposures: [{
+                // TODO: format date and time the same way as dateAdded
                 date: site.Exposure_date,
                 time: site.Exposure_time,
-                addedDate: site.Added_date,
-                addedTime: site.Added_time,
+                dateAdded: dateFormat.format(Date.parse(site.Added_date_dtm)).replace(",", ""),
                 tier: tier,
                 notes: site.Notes,
             }],
@@ -173,6 +175,9 @@ function foldSites(sites) {
             foldedSites.push(s1);
         }
     }
+
+    // TODO: sort exposure array by date and time of exposure
+
     return foldedSites;
 }
 

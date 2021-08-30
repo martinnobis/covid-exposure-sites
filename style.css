@@ -57,7 +57,7 @@ h1 {
     }
 }
 
-table tr td:first-child {
+.distCell {
     text-align: center;
     vertical-align: middle;
     font-weight: bold;
@@ -102,4 +102,8 @@ a:hover {
 .bi-exclamation-triangle {
     width: 1.5em;
     height: 1.5em;
+}
+
+tr:last-child {
+    border-bottom-color: transparent;
 }

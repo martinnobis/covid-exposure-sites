@@ -74,48 +74,47 @@ function populateTable(sites, userPos) {
 
     table.innerHTML = ""; // clear table
 
-    sites.forEach(site => {
+    sites.forEach((site, index) => {
         let siteText = site.title;
         if (site.streetAddress) {
             siteText = siteText.concat(`, ${site.streetAddress}`);
         }
 
-        let distCellClasses = ["bg-gradient"]
+        let distCellClasses = ["distCell", "bg-gradient"]
         let distance = "";
         if (!userPos || !site.formattedDist || !site.dist_km) {
-            distCellClasses.push("text-dark");
+            distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
             distance = `<span class="
             loader__dot ">?</span><span class="
             loader__dot ">?</span><span class="
             loader__dot ">?</span>`;
         } else {
+
             distance = site.formattedDist;
 
-            distCellClasses.push("text-light");
-
             if (site.dist_km * 1000 < userPos.acc) {
-                distance = `<${Math.ceil(userPos.acc / 10) * 10}m`
-                distCellClasses.push("bg-dark");
+                distance = `<${Math.ceil(userPos.acc / 10) * 10}m`;
+                distCellClasses = distCellClasses.concat(["text-light", "bg-dark"]);
             } else if (site.dist_km < 0.050) {
-                distCellClasses.push("bg-danger");
+                distCellClasses = distCellClasses.concat(["text-light", "bg-danger"]);
             } else if (site.dist_km < 0.200) {
-                distCellClasses.push("bg-warning");
+                distCellClasses = distCellClasses.concat(["text-light", "bg-warning"]);
             } else if (site.dist_km < 1) {
-                distCellClasses.push("bg-secondary");
+                distCellClasses = distCellClasses.concat(["text-light", "bg-secondary"]);
             } else if (site.dist_km < 5) {
-                distCellClasses.push("bg-primary");
+                distCellClasses = distCellClasses.concat(["text-light", "bg-primary"]);
             } else {
-                distCellClasses = ["text-dark", "bg-transparent"];
+                distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
             }
         }
 
-        const tier = getMaxTier(site);
         let row = table.insertRow();
         row.insertCell(0).innerHTML = distance;
         distCellClasses.forEach(c => {
             row.cells[0].classList.add(c);
         })
 
+        const tier = getMaxTier(site);
         let badge = ""
         if (tier === 1) {
             badge = `<span class="badge bg-danger">Tier ${tier}</span>`;
@@ -125,17 +124,45 @@ function populateTable(sites, userPos) {
             badge = `<span class="badge bg-secondary">Tier ${tier}</span>`;
         }
 
+        let cell = row.insertCell(1);
+
+        const exposuresHTML = site.exposures.map(exposure => {
+            return `
+            <tr>
+                <td>${exposure.date} ${exposure.time}</td>
+                <td>${exposure.dateAdded}</td>
+                <td>${exposure.notes}</td>
+            </tr>`;
+        })
+
+        const detail = `
+            <table class="table collapse" id="collapseSite${index}">
+                <thead class="text-muted">
+                    <tr>
+                        <th class="fw-light"><small>Exposure</small></th>
+                        <th class="fw-light"><small>Added</small></th>
+                        <th class="fw-light"><small>Notes</small></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${exposuresHTML.join("")}
+                </tbody>
+            </table>`;
+
         if (site.streetAddress) {
-            row.insertCell(1).innerHTML =
+            cell.innerHTML =
                 `
-                <div>${badge}<div class="fw-bold">${site.title}</div>${site.streetAddress}, exposures: ${site.exposures.length}</div>
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${badge}<div class="fw-bold" >${site.title}</div>${site.streetAddress}
+                    ${detail}
+                </div>
             `;
         } else {
-            row.insertCell(1).innerHTML =
+            cell.innerHTML =
                 `
-                <div>${badge}<div class="fw-bold">${site.title}</div>exposures: ${site.exposures.length}</div>
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${badge}<div class="fw-bold">${site.title}</div>
+                    ${detail}
+                </div>
             `;
-
         }
     })
 }
