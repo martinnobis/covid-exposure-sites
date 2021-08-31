@@ -75,10 +75,6 @@ function populateTable(sites, userPos) {
     table.innerHTML = ""; // clear table
 
     sites.forEach((site, index) => {
-        let siteText = site.title;
-        if (site.streetAddress) {
-            siteText = siteText.concat(`, ${site.streetAddress}`);
-        }
 
         let distCellClasses = ["distCell", "bg-gradient"]
         let distance = "";

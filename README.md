@@ -26,13 +26,16 @@
 - [ ] Style website
 - [x] Handle not getting user pos; 1. timeout (increase timeout or ask user to reload page) 2. ask user to give permission if denied.
 - [ ] Privacy policy
-- [ ] Limit number of sites shown, perhaps only those within 15km?
+- [x] Limit number of sites shown, perhaps only those within 10km?
 - [ ] Terms of use
 - [x] Productionise app (see instructions below)
+- [x] Set budget for Hosting and Functions (done: can't really set a budget, only alerts)
+- [x] Use separate keys for development/debugging and production (done: only needed frontend autocomplete address)
+- [ ] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
+- [ ] Add extra badges for new sites and # of exposures
 - [ ] Favicon
 - [ ] Site title/description
 - [ ] Check SEO
-- [ ] Add a scroll to top button
 - [x] Develop release build process:
 - [x] Release: js minifier
 - [x] Release: Remove console logs
