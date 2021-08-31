@@ -527,6 +527,16 @@ async function locBtnClicked() {
 
 // Start here
 
+const appCheck = firebase.appCheck();
+// Pass your reCAPTCHA v3 site key (public key) to activate(). Make sure this
+// key is the counterpart to the secret key you set in the Firebase console.
+appCheck.activate(
+    "6LfG7DccAAAAAE6Jgk9hCoPB1egUCFVWuvUjGRxW",
+
+    // Optional argument. If true, the SDK automatically refreshes App Check
+    // tokens as needed.
+    true);
+
 const geocoder = new google.maps.Geocoder(); // Used for getting user's address
 
 google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget

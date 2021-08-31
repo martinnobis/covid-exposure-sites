@@ -91,3 +91,39 @@ firebase deploy --only hosting
 ### Pub/Sub emulator
 
 Is not supported, see documentation here: <https://firebase.google.com/docs/emulator-suite#feature-matrix>
+
+### AppCheck
+
+Put this at the beginning of your Functions ```onCall``` endpoint.
+
+```js
+// context.app will be undefined if the request doesn't include a valid app Check token.
+// from: https://firebase.google.com/docs/app-check/cloud-functions?authuser=0
+if (context.app == undefined) {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "The function must be called from an App Check verified app.");
+}
+```
+
+Then register your website app by going to the Firebase console > Project settings >
+ App Check and generating a reCaptcha and putting in the secret
+key where it asks. See documentation: https://firebase.google.com/docs/app-check/web/recaptcha-provider
+
+Then put this in your frontend:
+
+```js
+const appCheck = firebase.appCheck();
+// Pass your reCAPTCHA v3 site key (public key) to activate(). Make sure this
+// key is the counterpart to the secret key you set in the Firebase console.
+appCheck.activate(
+    "<site token>",
+
+    // Optional argument. If true, the SDK automatically refreshes App Check
+    // tokens as needed.
+    true);
+```
+
+I put my reCaptcha site and secret keys in a safe place in .env (I shouldn't have to use them again).
+
+I'm not sure if this will work with the emulator though!

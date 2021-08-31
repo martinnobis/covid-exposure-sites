@@ -272,6 +272,13 @@ async function deleteQueryBatch(db, query, resolve) {
 // PROD: flip (prod uses australia-southeast1)
 // exports.sites = functions.https.onCall(async(data, context) => {
 exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
+    // context.app will be undefined if the request doesn't include a valid app Check token.
+    // from: https://firebase.google.com/docs/app-check/cloud-functions?authuser=0
+    if (context.app == undefined) {
+        throw new functions.https.HttpsError(
+            "failed-precondition",
+            "The function must be called from an App Check verified app.");
+    }
 
     // Get last update success time
     const lastUpdated = await metadataCollectionRef.doc("lastUpdateSuccess").get()
