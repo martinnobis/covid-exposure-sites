@@ -69,21 +69,12 @@ function getMaxTier(site) {
     return parseInt(exposureWithMaxTier.tier);
 }
 
-function populateTable(sites, userPos, maxDist, maxSitesToDisplay) {
+function populateTable(sites, userPos) {
     let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
 
     table.innerHTML = ""; // clear table
 
-    let index = 0;
-    for (let site of sites) {
-
-        if (maxDist && site.dist_km > maxDist) {
-            break;
-        }
-        if (maxSitesToDisplay && index > maxSitesToDisplay) {
-            break;
-        }
-
+    sites.forEach((site, index) => {
         let siteText = site.title;
         if (site.streetAddress) {
             siteText = siteText.concat(`, ${site.streetAddress}`);
@@ -171,8 +162,7 @@ function populateTable(sites, userPos, maxDist, maxSitesToDisplay) {
                 </div>
             `;
         }
-        index++;
-    }
+    })
 }
 
 function convertToDms(dd, isLng) {
@@ -491,6 +481,41 @@ function initialiseAutocompleteAddress() {
     });
 }
 
+function getPosition() {
+    if (userLocBtnActive) {
+        return getUserPosition();
+    } else {
+        return { lat: gAddressLat, lng: gAddressLng, acc: 0 };
+    }
+}
+
+async function locBtnClicked() {
+
+    const pos = await getPosition();
+
+    if (!pos.lat || !pos.lng) {
+        return;
+    }
+
+    gSites.then(sitesVal => {
+        sitesVal.sites.forEach(site => {
+            site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
+            site.formattedDist = formatDist(site.dist_km);
+        });
+
+        sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
+
+        // get all sites within 10km
+        let filteredSites = sitesVal.sites.filter(site => site.dist_km < 10);
+
+        if (filteredSites.length < 20) {
+            // if there are less than 20 sites within 10km, show the closest 20 instead
+            filteredSites = sitesVal.sites.slice(0, 20);
+        }
+        populateTable(filteredSites, pos);
+    });
+}
+
 // Start here
 
 google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress);
@@ -512,35 +537,6 @@ if (!cachedUserLocBtnActive || cachedUserLocBtnActive.toLowerCase() === "true") 
     activateAddressLocationBtn();
 }
 
-function getPosition() {
-    if (userLocBtnActive) {
-        return getUserPosition();
-    } else {
-        return { lat: gAddressLat, lng: gAddressLng, acc: 0 };
-    }
-}
-
-async function locBtnClicked() {
-
-    const pos = await getPosition();
-
-    if (!pos.lat || !pos.lng) {
-        return;
-    }
-
-    console.log(pos);
-
-    gSites.then(sitesVal => {
-        sitesVal.sites.forEach(site => {
-            site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
-            site.formattedDist = formatDist(site.dist_km);
-        });
-
-        sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
-        populateTable(sitesVal.sites, pos, 10, null);
-    });
-}
-
 let gSites = getSites()
     .then(sitesVal => {
         document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
@@ -551,34 +547,8 @@ let gSites = getSites()
         }, 0);
         document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
 
-        sitesVal.sites.sort((a, b) => a.suburb.localeCompare(b.suburb));
-        populateTable(sitesVal.sites, null, null, 20); // populate with ???
+        let slicedSites = sitesVal.sites.slice(0, 20); // just show 20
+        populateTable(slicedSites, null); // populate with ???
 
         return sitesVal;
     })
-
-// async function main() {
-
-//     const pos = getPosition();
-
-//     if (pos.lat && pos.lng) {
-//         gSites.sites.forEach(site => {
-//             site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
-//             site.formattedDist = formatDist(site.dist_km);
-//         });
-//     }
-
-//     const numExposures = gSites.sites.reduce((a, b) => {
-//         return a + b.exposures.length;
-//     }, 0);
-//     document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
-
-//     document.getElementById("numSites").innerHTML = `Number of sites: ${gSites.sites.length}`;
-
-//     document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(gSites.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
-
-//     gSites.sites.sort((a, b) => a.dist_km - b.dist_km);
-//     populateTable(gSites.sites, pos);
-// }
-
-// main();
