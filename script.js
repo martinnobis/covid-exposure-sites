@@ -1,9 +1,9 @@
 // PROD: Flip lines below
-// let functions = firebase.app().functions("australia-southeast1")
-let functions = firebase.app().functions()
+let functions = firebase.app().functions("australia-southeast1")
+    // let functions = firebase.app().functions()
 
 // PROD: Comment out line below
-firebase.functions().useEmulator("localhost", 5001);
+// firebase.functions().useEmulator("localhost", 5001);
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -280,13 +280,13 @@ function paginatedParallelFetch() {
         })
 }
 
+const sitesEndpoint = firebase.functions().httpsCallable("sites");
+
 async function offsetSiteFetch(offset, limit) {
-    // PROD: flip
-    // const sitesUrl = `https://australia-southeast1-covid-exposure-sites-322711.cloudfunctions.net/getSites?offset=${offset}&limit=${limit}`;
-    const sitesUrl = `http://localhost:5001/covid-exposure-sites-322711/australia-southeast1/getSites?offset=${offset}&limit=${limit}`;
-    return fetch(sitesUrl)
-        .then(response => response.json())
-        .then(responseJson => responseJson);
+    return sitesEndpoint({ offset: offset, limit: limit })
+        .then(response => {
+            return response.data;
+        });
 }
 
 function paginatedSiteFetch(offset, prevResponse) {

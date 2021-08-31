@@ -269,9 +269,9 @@ async function deleteQueryBatch(db, query, resolve) {
     });
 }
 
-exports.getSites = functions.region("australia-southeast1").https.onRequest(async(req, res) => {
-
-    res.set('Access-Control-Allow-Origin', '*'); // CORS
+// PROD: flip (prod uses australia-southeast1)
+// exports.sites = functions.https.onCall(async(data, context) => {
+exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
 
     // Get last update success time
     const lastUpdated = await metadataCollectionRef.doc("lastUpdateSuccess").get()
@@ -279,27 +279,27 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
 
     if (!lastUpdated) {
         console.error("Could not get lastUpdated value from Firestore.")
-        return res.status(500).send({ result: "500 - Internal server error." });
+        return { result: "500 - Internal server error." };
     }
 
     let offset = 0;
-    if (req.query.offset) {
-        offset = parseInt(req.query.offset);
+    if (data.offset) {
+        offset = parseInt(data.offset);
     }
 
     let limit = 100;
-    if (req.query.limit) {
-        limit = parseInt(req.query.limit);
+    if (data.limit) {
+        limit = parseInt(data.limit);
     }
 
     if (limit < 1) {
         // No sites requested!
-        return res.status(200).send({
+        return {
             results: [],
             offset: offset,
             total: 0,
             lastUpdated: lastUpdated
-        });
+        };
     }
 
     const total = await sitesCollectionRef.get()
@@ -307,21 +307,21 @@ exports.getSites = functions.region("australia-southeast1").https.onRequest(asyn
 
     if (!total) {
         // No sites!
-        return res.status(200).send({
+        return {
             results: [],
             offset: offset,
             total: 0,
             lastUpdated: 0
-        });
+        };
     }
 
     // Start after as ids start at 1
     let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
 
-    return res.status(200).send({
+    return {
         results: sites.docs.map(site => site.data()),
         offset: offset,
         total: total,
         lastUpdated: lastUpdated
-    });
+    };
 })
