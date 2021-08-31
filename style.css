@@ -104,6 +104,12 @@ a:hover {
     height: 1.5em;
 }
 
+.bi-geo-alt {
+    width: 1em;
+    height: 1em;
+    margin-bottom: 0.125em;
+}
+
 tr:last-child {
     border-bottom-color: transparent;
 }

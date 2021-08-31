@@ -177,11 +177,19 @@ function convertToDms(dd, isLng) {
     return `${deg}° ${min}' ${sec}" ${direction}`;
 }
 
-function cacheUserPosition(pos) {
+function cacheUserPosition(pos, address) {
     window.localStorage.setItem("lat", pos.lat)
     window.localStorage.setItem("lng", pos.lng)
-    window.localStorage.setItem("acc", pos.acc);
+    window.localStorage.setItem("address", address)
     window.localStorage.setItem("userPosLastCached", +Date.now())
+}
+
+function hideAllPositionToasts() {
+    posToast.hide();
+    // including the error toasts
+    posPermissionDeniedToast.hide();
+    posUnavailableToast.hide();
+    posTimeoutToast.hide();
 }
 
 async function getUserPosition() {
@@ -189,9 +197,9 @@ async function getUserPosition() {
     posToast.show();
 
     // start showing animated placeholder
-    document.getElementById("userPos").innerHTML = `
-        <p id="userPos" class="placeholder-glow fst-italic">
-            <span class="placeholder placeholder-lg col-8"></span>
+    document.getElementById("userAddress").innerHTML = `
+        <p class="placeholder-glow fst-italic">
+            <span class="placeholder placeholder col-8"></span>
         </p>
     `;
 
@@ -208,29 +216,24 @@ async function getUserPosition() {
 
         const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: minsToMs(maxAgeMins) }
         return new Promise((success, failure) => {
-            navigator.geolocation.getCurrentPosition(pos => {
+            navigator.geolocation.getCurrentPosition(async pos => {
 
-                const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
+                hideAllPositionToasts();
 
-                cacheUserPosition(p);
+                const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                const address = await getAddressFromPos(p);
 
-                posToast.hide();
-
-                // hide any previous pos errors too 
-                posPermissionDeniedToast.hide();
-                posUnavailableToast.hide();
-                posTimeoutToast.hide();
-
-                document.getElementById("userPos").innerHTML = `${convertToDms(p.lat, false)}, ${convertToDms(p.lng, true)}`;
+                cacheUserPosition(p, address);
+                document.getElementById("userAddress").innerHTML = address;
 
                 success(p);
             }, error => {
 
-                posToast.hide();
+                hideAllPositionToasts();
 
                 // show non-animated placeholder on error
-                document.getElementById("userPos").innerHTML = `
-                        <p class="placeholder placeholder-lg col-8"></p>
+                document.getElementById("userAddress").innerHTML = `
+                        <p class="placeholder placeholder col-8"></p>
                 `;
 
                 if (error.code === 1) {
@@ -243,17 +246,15 @@ async function getUserPosition() {
             }, options);
         });
     } else {
-        console.log("getting stored user position");
-
-        posToast.hide();
+        hideAllPositionToasts();
 
         const pos = {
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
-            acc: parseFloat(window.localStorage.getItem("acc"))
         };
+        const address = window.localStorage.getItem("address");
 
-        document.getElementById("userPos").innerHTML = `${convertToDms(pos.lat, false)}, ${convertToDms(pos.lng, true)}`;
+        document.getElementById("userAddress").innerHTML = address;
 
         return pos;
     }
@@ -462,6 +463,20 @@ useAddressBtn.addEventListener("mouseout", () => {
     useAddressBtn.classList.remove("btn-light");
 })
 
+
+function getAddressFromPos(pos) {
+    return geocoder
+        .geocode({ location: pos })
+        .then(response => {
+            if (response.results[0]) {
+                return response.results[0].formatted_address.replace(", Australia", "");
+            } else {
+                window.alert("No results found");
+            }
+        })
+        .catch((e) => window.alert("Geocoder failed due to: " + e));
+}
+
 function initialiseAutocompleteAddress() {
     const input = document.getElementById("searchTextField");
     const autocomplete = new google.maps.places.Autocomplete(input);
@@ -512,7 +527,9 @@ async function locBtnClicked() {
 
 // Start here
 
-google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress);
+const geocoder = new google.maps.Geocoder(); // Used for getting user's address
+
+google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget
 initialiseAutocompleteAddress();
 
 let userLocBtnActive = null;
