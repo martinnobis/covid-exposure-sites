@@ -32,7 +32,7 @@
 - [x] Set budget for Hosting and Functions (done: can't really set a budget, only alerts)
 - [x] Use separate keys for development/debugging and production (done: only needed frontend autocomplete address)
 - [ ] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
-- [ ] Add extra badges for new sites and # of exposures
+- [ ] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
 - [ ] Favicon
 - [ ] Site title/description
 - [ ] Check SEO

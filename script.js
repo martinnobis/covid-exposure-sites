@@ -406,16 +406,15 @@ useAddressBtn.addEventListener("click", () => {
 function activateUseLocationBtn() {
     useLocationBtn.classList.add("shadow");
     useLocationBtn.classList.add("border-primary");
-    useLocationBtn.classList.remove("border-light");
+    useLocationBtn.classList.remove("border-dark");
     useLocationBtn.classList.remove("opacity-50");
 
     useAddressBtn.classList.remove("shadow");
     useAddressBtn.classList.remove("border-primary");
-    useAddressBtn.classList.add("border-light");
+    useAddressBtn.classList.add("border-dark");
     useAddressBtn.classList.add("opacity-50");
 
     userLocBtnActive = true;
-    window.localStorage.setItem("userLocBtnActive", userLocBtnActive);
 
     locBtnClicked();
 }
@@ -434,17 +433,16 @@ function activateAddressLocationBtn() {
     // activate this one
     useAddressBtn.classList.add("shadow");
     useAddressBtn.classList.add("border-primary");
-    useAddressBtn.classList.remove("border-light");
+    useAddressBtn.classList.remove("border-dark");
     useAddressBtn.classList.remove("opacity-50");
 
     // deactivate this one
     useLocationBtn.classList.remove("shadow");
     useLocationBtn.classList.remove("border-primary");
-    useLocationBtn.classList.add("border-light");
+    useLocationBtn.classList.add("border-dark");
     useLocationBtn.classList.add("opacity-50");
 
     userLocBtnActive = false;
-    window.localStorage.setItem("userLocBtnActive", userLocBtnActive);
 
     // Remove any pos toast errors
     posPermissionDeniedToast.hide();
@@ -521,17 +519,6 @@ let userLocBtnActive = null;
 
 let gAddressLat = null;
 let gAddressLng = null;
-
-// Retrieve user's last selected location setting, some may not want to use their own location ever.
-
-const cachedUserLocBtnActive = window.localStorage.getItem("userLocBtnActive");
-if (!cachedUserLocBtnActive || cachedUserLocBtnActive.toLowerCase() === "true") {
-    userLocBtnActive = true;
-    activateUseLocationBtn();
-} else {
-    userLocBtnActive = false;
-    activateAddressLocationBtn();
-}
 
 let gSites = getSites()
     .then(sitesVal => {
