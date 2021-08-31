@@ -280,7 +280,7 @@ function paginatedParallelFetch() {
         })
 }
 
-const sitesEndpoint = firebase.functions().httpsCallable("sites");
+const sitesEndpoint = functions.httpsCallable("sites");
 
 async function offsetSiteFetch(offset, limit) {
     return sitesEndpoint({ offset: offset, limit: limit })

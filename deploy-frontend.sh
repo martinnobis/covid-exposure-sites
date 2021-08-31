@@ -16,4 +16,4 @@ html-minifier \
 
 cssnano < style.css > public/style.min.css
 
-rm -f public/style.css public/script.js public/index.html
+rm -f public/style.css public/script.js
