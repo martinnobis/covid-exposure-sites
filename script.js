@@ -69,12 +69,21 @@ function getMaxTier(site) {
     return parseInt(exposureWithMaxTier.tier);
 }
 
-function populateTable(sites, userPos) {
+function populateTable(sites, userPos, maxDist, maxSitesToDisplay) {
     let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
 
     table.innerHTML = ""; // clear table
 
-    sites.forEach((site, index) => {
+    let index = 0;
+    for (let site of sites) {
+
+        if (maxDist && site.dist_km > maxDist) {
+            break;
+        }
+        if (maxSitesToDisplay && index > maxSitesToDisplay) {
+            break;
+        }
+
         let siteText = site.title;
         if (site.streetAddress) {
             siteText = siteText.concat(`, ${site.streetAddress}`);
@@ -95,14 +104,12 @@ function populateTable(sites, userPos) {
             if (site.dist_km * 1000 < userPos.acc) {
                 distance = `<${Math.ceil(userPos.acc / 10) * 10}m`;
                 distCellClasses = distCellClasses.concat(["text-light", "bg-dark"]);
-            } else if (site.dist_km < 0.050) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-danger"]);
             } else if (site.dist_km < 0.200) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-warning"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-danger"]);
             } else if (site.dist_km < 1) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-secondary"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-warning"]);
             } else if (site.dist_km < 5) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-primary"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-secondary"]);
             } else {
                 distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
             }
@@ -164,7 +171,8 @@ function populateTable(sites, userPos) {
                 </div>
             `;
         }
-    })
+        index++;
+    }
 }
 
 function convertToDms(dd, isLng) {
@@ -183,16 +191,23 @@ function convertToDms(dd, isLng) {
     return `${deg}° ${min}' ${sec}" ${direction}`;
 }
 
-function cacheUserPosition(lat, lng, acc) {
-    window.localStorage.setItem("lat", lat)
-    window.localStorage.setItem("lng", lng)
-    window.localStorage.setItem("acc", acc);
+function cacheUserPosition(pos) {
+    window.localStorage.setItem("lat", pos.lat)
+    window.localStorage.setItem("lng", pos.lng)
+    window.localStorage.setItem("acc", pos.acc);
     window.localStorage.setItem("userPosLastCached", +Date.now())
 }
 
 async function getUserPosition() {
 
     posToast.show();
+
+    // start showing animated placeholder
+    document.getElementById("userPos").innerHTML = `
+        <p id="userPos" class="placeholder-glow fst-italic">
+            <span class="placeholder placeholder-lg col-8"></span>
+        </p>
+    `;
 
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
@@ -209,19 +224,28 @@ async function getUserPosition() {
         return new Promise((success, failure) => {
             navigator.geolocation.getCurrentPosition(pos => {
 
-                cacheUserPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
+
+                cacheUserPosition(p);
 
                 posToast.hide();
 
-                success({
-                    changed: true,
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    acc: pos.coords.accuracy
-                });
+                // hide any previous pos errors too 
+                posPermissionDeniedToast.hide();
+                posUnavailableToast.hide();
+                posTimeoutToast.hide();
+
+                document.getElementById("userPos").innerHTML = `${convertToDms(p.lat, false)}, ${convertToDms(p.lng, true)}`;
+
+                success(p);
             }, error => {
 
                 posToast.hide();
+
+                // show non-animated placeholder on error
+                document.getElementById("userPos").innerHTML = `
+                        <p class="placeholder placeholder-lg col-8"></p>
+                `;
 
                 if (error.code === 1) {
                     posPermissionDeniedToast.show();
@@ -237,12 +261,15 @@ async function getUserPosition() {
 
         posToast.hide();
 
-        return {
-            changed: false,
+        const pos = {
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
             acc: parseFloat(window.localStorage.getItem("acc"))
         };
+
+        document.getElementById("userPos").innerHTML = `${convertToDms(pos.lat, false)}, ${convertToDms(pos.lng, true)}`;
+
+        return pos;
     }
 }
 
@@ -325,13 +352,13 @@ async function getSites() {
 
         sitesToast.hide();
 
-        return { changed: false, sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
+        return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
     } else {
         return offsetSiteFetch(0, 10000)
             .then(sitesVal => {
                 cacheSites(sitesVal);
                 sitesToast.hide();
-                return { changed: true, sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
+                return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
             });
     }
 }
@@ -343,7 +370,7 @@ async function getSitesParallel(batchSize) {
     let sitesVal = getCachedSites();
     if (sitesVal) {
         sitesToast.hide();
-        return { changed: false, sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
+        return { sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
     } else {
         // fetch first batch to get totalSites then do the rest in parallel
         return offsetSiteFetch(0, batchSize)
@@ -366,7 +393,7 @@ async function getSitesParallel(batchSize) {
 
                     sitesToast.hide();
 
-                    return { changed: true, sites: s, lastUpdated: firstResponse.lastUpdated };
+                    return { sites: s, lastUpdated: firstResponse.lastUpdated };
                 })
             })
     }
@@ -379,58 +406,179 @@ const posPermissionDeniedToast = new bootstrap.Toast(document.getElementById("po
 const posUnavailableToast = new bootstrap.Toast(document.getElementById("posUnavailableToast"), { autohide: false });
 const posTimeoutToast = new bootstrap.Toast(document.getElementById("posTimeoutToast"), { autohide: false });
 
-async function main() {
+const useLocationBtn = document.getElementById("useLocationBtn");
+const useAddressBtn = document.getElementById("useAddressBtn");
 
-    const parallelTasks = [
-        getUserPosition(),
-        getSites().then(sitesVal => {
-            populateTable(sitesVal.sites, null); // populate with ???
-            return sitesVal;
-        })
-    ];
+useLocationBtn.addEventListener("click", () => {
+    activateUseLocationBtn();
+});
 
-    Promise.all(parallelTasks).then(values => {
-        let pos = values[0];
-        let sitesVal = values[1];
+useAddressBtn.addEventListener("click", () => {
+    activateAddressLocationBtn();
+});
 
+function activateUseLocationBtn() {
+    useLocationBtn.classList.add("shadow");
+    useLocationBtn.classList.add("border-primary");
+    useLocationBtn.classList.remove("border-light");
+    useLocationBtn.classList.remove("opacity-50");
+
+    useAddressBtn.classList.remove("shadow");
+    useAddressBtn.classList.remove("border-primary");
+    useAddressBtn.classList.add("border-light");
+    useAddressBtn.classList.add("opacity-50");
+
+    userLocBtnActive = true;
+    window.localStorage.setItem("userLocBtnActive", userLocBtnActive);
+
+    locBtnClicked();
+}
+
+useLocationBtn.addEventListener("mouseover", () => {
+    useLocationBtn.classList.remove("btn-white");
+    useLocationBtn.classList.add("btn-light");
+})
+
+useLocationBtn.addEventListener("mouseout", () => {
+    useLocationBtn.classList.add("btn-white");
+    useLocationBtn.classList.remove("btn-light");
+})
+
+function activateAddressLocationBtn() {
+    // activate this one
+    useAddressBtn.classList.add("shadow");
+    useAddressBtn.classList.add("border-primary");
+    useAddressBtn.classList.remove("border-light");
+    useAddressBtn.classList.remove("opacity-50");
+
+    // deactivate this one
+    useLocationBtn.classList.remove("shadow");
+    useLocationBtn.classList.remove("border-primary");
+    useLocationBtn.classList.add("border-light");
+    useLocationBtn.classList.add("opacity-50");
+
+    userLocBtnActive = false;
+    window.localStorage.setItem("userLocBtnActive", userLocBtnActive);
+
+    // Remove any pos toast errors
+    posPermissionDeniedToast.hide();
+    posUnavailableToast.hide();
+    posTimeoutToast.hide();
+
+    locBtnClicked();
+}
+
+useAddressBtn.addEventListener("mouseover", () => {
+    useAddressBtn.classList.remove("btn-white");
+    useAddressBtn.classList.add("btn-light");
+})
+
+useAddressBtn.addEventListener("mouseout", () => {
+    useAddressBtn.classList.add("btn-white");
+    useAddressBtn.classList.remove("btn-light");
+})
+
+function initialiseAutocompleteAddress() {
+    const input = document.getElementById("searchTextField");
+    const autocomplete = new google.maps.places.Autocomplete(input);
+
+    google.maps.event.addListener(autocomplete, "place_changed", () => {
+        const place = autocomplete.getPlace();
+        gAddressLat = place.geometry.location.lat();
+        gAddressLng = place.geometry.location.lng();
+
+        locBtnClicked();
+    });
+}
+
+// Start here
+
+google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress);
+initialiseAutocompleteAddress();
+
+let userLocBtnActive = null;
+
+let gAddressLat = null;
+let gAddressLng = null;
+
+// Retrieve user's last selected location setting, some may not want to use their own location ever.
+
+const cachedUserLocBtnActive = window.localStorage.getItem("userLocBtnActive");
+if (!cachedUserLocBtnActive || cachedUserLocBtnActive.toLowerCase() === "true") {
+    userLocBtnActive = true;
+    activateUseLocationBtn();
+} else {
+    userLocBtnActive = false;
+    activateAddressLocationBtn();
+}
+
+function getPosition() {
+    if (userLocBtnActive) {
+        return getUserPosition();
+    } else {
+        return { lat: gAddressLat, lng: gAddressLng, acc: 0 };
+    }
+}
+
+async function locBtnClicked() {
+
+    const pos = await getPosition();
+
+    if (!pos.lat || !pos.lng) {
+        return;
+    }
+
+    console.log(pos);
+
+    gSites.then(sitesVal => {
         sitesVal.sites.forEach(site => {
             site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
             site.formattedDist = formatDist(site.dist_km);
         });
 
-        // TODO
-        const rowTemplate =
-            `
-                <div>
-                </div>
-            `;
+        sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
+        populateTable(sitesVal.sites, pos, 10, null);
+    });
+}
 
-        // function initialize() {
-        //     var input = document.getElementById('searchTextField');
-        //     var autocomplete = new google.maps.places.Autocomplete(input);
-        //     google.maps.event.addListener(autocomplete, 'place_changed', function() {
-        //         var place = autocomplete.getPlace();
-        //         document.getElementById('cityLat').innerHTML = place.geometry.location.lat();
-        //         document.getElementById('cityLng').innerHTML = place.geometry.location.lng();
-        //     });
-        // }
-        // google.maps.event.addDomListener(window, 'load', initialize);
-
-        // initialize();
+let gSites = getSites()
+    .then(sitesVal => {
+        document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
+        document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
 
         const numExposures = sitesVal.sites.reduce((a, b) => {
             return a + b.exposures.length;
         }, 0);
         document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
 
-        document.getElementById("userPos").innerHTML = `Your position: [${convertToDms(pos.lat, false)}, ${convertToDms(pos.lng, true)}]`;
-        document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
+        sitesVal.sites.sort((a, b) => a.suburb.localeCompare(b.suburb));
+        populateTable(sitesVal.sites, null, null, 20); // populate with ???
 
-        document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
+        return sitesVal;
+    })
 
-        sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
-        populateTable(sitesVal.sites, pos);
-    });
-}
+// async function main() {
 
-main();
+//     const pos = getPosition();
+
+//     if (pos.lat && pos.lng) {
+//         gSites.sites.forEach(site => {
+//             site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
+//             site.formattedDist = formatDist(site.dist_km);
+//         });
+//     }
+
+//     const numExposures = gSites.sites.reduce((a, b) => {
+//         return a + b.exposures.length;
+//     }, 0);
+//     document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
+
+//     document.getElementById("numSites").innerHTML = `Number of sites: ${gSites.sites.length}`;
+
+//     document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(gSites.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
+
+//     gSites.sites.sort((a, b) => a.dist_km - b.dist_km);
+//     populateTable(gSites.sites, pos);
+// }
+
+// main();

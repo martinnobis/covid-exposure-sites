@@ -20,13 +20,13 @@
 - [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
 - [x] Add 'site under development' banner
 - [x] Improve front end lifecyle and error handling
-- [ ] Display sites with template
-- [ ] Populate rows with all site data
+- [x] Populate rows with all site data
 - [ ] Clean raw exposure site data
 - [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
 - [ ] Style website
 - [x] Handle not getting user pos; 1. timeout (increase timeout or ask user to reload page) 2. ask user to give permission if denied.
 - [ ] Privacy policy
+- [ ] Limit number of sites shown, perhaps only those within 15km?
 - [ ] Terms of use
 - [x] Productionise app (see instructions below)
 - [ ] Favicon
@@ -39,7 +39,7 @@
 - [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
 - [ ] Handle flights
 - [ ] Handle public transport (tram route titles are really long)
-- [ ] Add ability to change position by entering an address using the Google autocomplete address widget (see commented out code)
+- [x] Add ability to change position by entering an address using the Google autocomplete address widget (see commented out code)
 - [ ] Don't display VICs address for site, but use the one fetched from Google API (it'd be more consistent)
 - [ ] Add hyperlink to address to open Google Maps to location
 - [ ] Handle not finding site position gracefully and inform user, currently these aren't written to Firestore at all!

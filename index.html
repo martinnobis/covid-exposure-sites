@@ -12,7 +12,7 @@
     <!-- <link rel="stylesheet" href="style.min.css"> -->
     <link rel="stylesheet" href="style.css">
 
-    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script> -->
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1YFWXV08HE"></script>
@@ -31,7 +31,26 @@
 <body>
 
     <h1>Covid-19 exposure sites near me</h1>
-    <p id="userPos">Your position:</p>
+
+    <div class="container px-4 my-3">
+        <div class="row g-2">
+            <div class="col-sm">
+                <button id="useLocationBtn" style="width: 100%; height: 100%" type="button" class="btn btn-white col p-3 opacity-50">
+                    <h5 class="mb-2">Use my location</h5>
+                    <div id="userPos">
+                        <p class="placeholder placeholder-lg col-8"></p>
+                    </div>
+                </button>
+            </div>
+            <div class="col-sm">
+                <button id="useAddressBtn" style="width: 100%; height: 100%" type="button" class="btn btn-white col p-3 opacity-50">
+                    <h5 class="mb-2">Use an address</h5>
+                    <input style="width: 100%" id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
+                </button>
+            </div>
+        </div>
+    </div>
+
     <p id="numSites">Number of sites:</p>
     <p id="numExposures">Number of exposures:</p>
     <p id="lastUpdated">Last updated: Never</p>
@@ -61,8 +80,6 @@
     </div> -->
 
 
-    <!-- <input id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
-    <p id="cityLat">Chosen lat</p> -->
 
     <div class="d-flex justify-content-center">
         <table id="sites" class="table table-hover">
