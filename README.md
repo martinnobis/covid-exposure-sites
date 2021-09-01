@@ -126,4 +126,14 @@ appCheck.activate(
 
 I put my reCaptcha site and secret keys in a safe place in .env (I shouldn't have to use them again).
 
-I'm not sure if this will work with the emulator though!
+This will work with the emulator, but it needs more work (documentation: https://firebase.google.com/docs/app-check/web/debug-provider?authuser=0):
+
+1. Add this line to your web app before including the app check SDK, keep it there for debug builds.
+
+  ```html
+  <script>self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;</script>
+  ```
+
+2. Go to localhost and grab the debug token from the console log, keep it secret. I put mine in .env for safekeeping.
+3. Add the debug token in the App check menu in the Firebase console > Project settings menu.
+4. That's it, no need to change the actual call to the Functions endpoint.
