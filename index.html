@@ -18,12 +18,12 @@
 
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
     <!-- PROD: flip -->
-    <link rel="stylesheet" href="style.min.css">
-    <!-- <link rel="stylesheet" href="style.css"> -->
+    <!-- <link rel="stylesheet" href="style.min.css"> -->
+    <link rel="stylesheet" href="style.css">
 
     <!-- PROD: switch (first is dev)-->
-    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script> -->
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO_F5kQ-eVc8KKMoHDMKMG6VgEd-h_lOM&libraries=places"></script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script>
+    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO_F5kQ-eVc8KKMoHDMKMG6VgEd-h_lOM&libraries=places"></script> -->
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1YFWXV08HE"></script>
@@ -112,7 +112,7 @@
 
     <!-- Table -->
 
-    <div class="container-md mb-5">
+    <div class="container-md">
         <table id="sites" class="table table-hover">
             <thead>
                 <tr>
@@ -173,9 +173,15 @@
         </div>
     </div>
 
+
+
+    <!-- Blue section -->
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#5481b5" fill-opacity="1" d="M0,128L48,122.7C96,117,192,107,288,122.7C384,139,480,181,576,197.3C672,213,768,203,864,208C960,213,1056,235,1152,234.7C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+
     <section style="background: #5481b5; color: white">
-        <div class="container px-4 py-5" id="featured-3">
-            <div class="row g-4 py-5 row-cols-1 row-cols-md-3">
+        <div class="container px-4 pb-5" id="featured-3">
+            <div class="row g-4 pb-5 row-cols-1 row-cols-md-3">
 
                 <div class="feature col">
                     <div class="feature-icon bg-primary bg-gradient">
@@ -270,7 +276,7 @@
     <!-- Footer -->
 
     <div class="container">
-        <footer class="py-3 my-4">
+        <footer class="py-3 my-5">
             <ul class="nav justify-content-center align-items-center border-bottom pb-3 mb-3">
                 <li class="nav-item"><a href="/" class="nav-link px-2 text-muted">Home</a></li>
                 <li class="nav-item"><a href="privacypolicy.html" class="nav-link px-2 text-muted">Privacy Policy</a></li>
@@ -285,21 +291,21 @@
 <script src="/__/firebase/8.10.0/firebase-app.js"></script>
 
 <!-- PROD: comment out this line -->
-<!-- <script>
+<script>
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-</script> -->
+</script>
 
 <script src="/__/firebase/8.10.0/firebase-app-check.js"></script>
 <script src="/__/firebase/8.10.0/firebase-functions.js"></script>
 
 <!-- PROD: Remove useEmulator -->
-<!-- <script src="/__/firebase/init.js?useEmulator=true"></script> -->
-<script src="/__/firebase/init.js"></script>
+<script src="/__/firebase/init.js?useEmulator=true"></script>
+<!-- <script src="/__/firebase/init.js"></script> -->
 
 <script src="bootstrap/bootstrap.bundle.min.js"></script>
 
 <!-- PROD: use minified -->
-<script src="script.min.js"></script>
-<!-- <script src="script.js"></script> -->
+<!-- <script src="script.min.js"></script> -->
+<script src="script.js"></script>
 
 </html>
