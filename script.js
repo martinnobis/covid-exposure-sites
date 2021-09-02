@@ -80,10 +80,7 @@ function populateTable(sites, userPos) {
         let distance = "";
         if (!userPos || !site.formattedDist || !site.dist_km) {
             distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
-            distance = `<span class="
-            loader__dot ">?</span><span class="
-            loader__dot ">?</span><span class="
-            loader__dot ">?</span>`;
+            distance = `<span class="loader__dot ">?</span>`;
         } else {
 
             distance = site.formattedDist;
@@ -196,13 +193,6 @@ async function getUserPosition() {
 
     posToast.show();
 
-    // start showing animated placeholder
-    document.getElementById("userAddress").innerHTML = `
-        <p class="placeholder-glow fst-italic">
-            <span class="placeholder placeholder col-8"></span>
-        </p>
-    `;
-
     const maxAgeMins = 1; // maximum cached position age
     const timeNow = Date.now();
 
@@ -230,11 +220,6 @@ async function getUserPosition() {
             }, error => {
 
                 hideAllPositionToasts();
-
-                // show non-animated placeholder on error
-                document.getElementById("userAddress").innerHTML = `
-                        <p class="placeholder placeholder col-8"></p>
-                `;
 
                 if (error.code === 1) {
                     posPermissionDeniedToast.show();
@@ -407,11 +392,13 @@ useAddressBtn.addEventListener("click", () => {
 function activateUseLocationBtn() {
     useLocationBtn.classList.add("shadow");
     useLocationBtn.classList.add("border-primary");
+    useLocationBtn.classList.add("border-2");
     useLocationBtn.classList.remove("border-dark");
     useLocationBtn.classList.remove("opacity-50");
 
     useAddressBtn.classList.remove("shadow");
     useAddressBtn.classList.remove("border-primary");
+    useAddressBtn.classList.remove("border-2");
     useAddressBtn.classList.add("border-dark");
     useAddressBtn.classList.add("opacity-50");
 
@@ -434,12 +421,14 @@ function activateAddressLocationBtn() {
     // activate this one
     useAddressBtn.classList.add("shadow");
     useAddressBtn.classList.add("border-primary");
+    useAddressBtn.classList.add("border-2");
     useAddressBtn.classList.remove("border-dark");
     useAddressBtn.classList.remove("opacity-50");
 
     // deactivate this one
     useLocationBtn.classList.remove("shadow");
     useLocationBtn.classList.remove("border-primary");
+    useLocationBtn.classList.remove("border-2");
     useLocationBtn.classList.add("border-dark");
     useLocationBtn.classList.add("opacity-50");
 
@@ -562,3 +551,22 @@ let gSites = getSites()
 
         return sitesVal;
     })
+
+// Set up back to top button
+
+let backToTopBtn = document.getElementById("backToTopBtn");
+
+// When the user scrolls down some amount of px from the top of the document, show the button
+window.onscroll = () => {
+    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+        backToTopBtn.classList.add("load");
+    } else {
+        backToTopBtn.classList.remove("load");
+    }
+};
+
+// When the user clicks on the button scroll to the top of the document
+backToTopBtn.addEventListener("click", () => {
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+});

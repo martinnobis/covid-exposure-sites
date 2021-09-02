@@ -33,7 +33,7 @@
 - [x] Use separate keys for development/debugging and production (done: only needed frontend autocomplete address)
 - [ ] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
 - [ ] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
-- [ ] Favicon
+- [x] Favicon
 - [ ] Site title/description
 - [ ] Check SEO
 - [x] Develop release build process:
