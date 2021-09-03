@@ -25,14 +25,17 @@
 - [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
 - [x] Style website
 - [x] Handle not getting user pos; 1. timeout (increase timeout or ask user to reload page) 2. ask user to give permission if denied.
-- [ ] Privacy policy
+- [x] Privacy policy
 - [x] Limit number of sites shown, perhaps only those within 10km?
-- [ ] Terms of use
+- [x] Acceptable use
 - [x] Productionise app (see instructions below)
 - [x] Set budget for Hosting and Functions (done: can't really set a budget, only alerts)
 - [x] Use separate keys for development/debugging and production (done: only needed frontend autocomplete address)
 - [x] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
+- [ ] Move scroll up button to be inside the toasts div, that way it stacks with them
+- [ ] Give scroll up button a shadow
 - [ ] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
+- [ ] Add disclaimer about not all sites appearing
 - [x] Favicon
 - [ ] Site title/description
 - [ ] Check SEO

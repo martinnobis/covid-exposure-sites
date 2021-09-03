@@ -12,7 +12,12 @@ const noLocationSitesCollectionRef = admin.firestore().collection("noLocationSit
 const coordsCollectionRef = admin.firestore().collection("sites");
 const metadataCollectionRef = admin.firestore().collection("metadata");
 
+const sitesAlphaCollectionRef = admin.firestore().collection("sitesAlpha");
+const sitesBravoCollectionRef = admin.firestore().collection("sitesBravo");
+
 const dateFormat = new Intl.DateTimeFormat('en-AU', { weekday: "short", year: "2-digit", month: "numeric", day: 'numeric' });
+
+const PAGE_SIZE = 100;
 
 function getGeocodeUrl(address) {
     return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&bounds=-34.21832861798514,140.97232382930986|-38.780983886239156,147.920293027031&components=country:AU&key=${process.env.GEOCODE_API_KEY}`
@@ -181,6 +186,21 @@ function foldSites(sites) {
     return foldedSites;
 }
 
+async function getColdCollectionStr() {
+    return metadataCollectionRef.doc("pagination").get()
+        .then(doc => doc.data().coldCollection);
+}
+
+async function getHotCollectionStr() {
+    return metadataCollectionRef.doc("pagination").get()
+        .then(doc => doc.data().hotCollection);
+}
+
+function sleep(ms) {
+    // usage: await sleep(2000); to sleep synchronously
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
 exports.updateAllSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 60 minutes").onRun(async(context) => {
 
@@ -201,11 +221,28 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
     sites = sites.map(s => parseRawSite(s));
     sites = foldSites(sites);
 
-    // From https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
-    await deleteCollection(sitesCollectionRef, 40);
     await deleteCollection(noLocationSitesCollectionRef, 40);
 
-    let counter = 0;
+    // Delete documents in cold collection ref
+    const coldCollectionStr = await getColdCollectionStr();
+    const hotCollectionStr = await getHotCollectionStr();
+
+    let coldCollectionRef = undefined;
+    if (coldCollectionStr === "sitesAlpha") {
+        coldCollectionRef = sitesAlphaCollectionRef;
+    } else {
+        coldCollectionRef = sitesBravoCollectionRef;
+    }
+    await deleteCollection(coldCollectionRef, 40);
+
+    // Create new documents (pages) in it
+    const numPages = Math.floor(sites.length / PAGE_SIZE);
+
+    for (i = 0; i < numPages; i++) {
+        coldCollectionRef.doc(`page${i}`).set({ sites: [] });
+    }
+
+    let counter = 1;
     for (site of sites) {
         const coord = await getSiteCoords(site).catch(error => {
             // Don't delete hash and searchParam in this case as it's useful for debugging
@@ -218,14 +255,19 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         }
         site.lat = coord.location._latitude;
         site.lng = coord.location._longitude;
-        site.id = counter + 1; // VIC data _id starts at 1, might as well align with that
+        site.id = counter; // VIC data _id starts at 1, might as well align with that
 
         // Not needed on the client side, save space and bandwidth this way
         delete site.hash;
         delete site.searchParam;
 
-        sitesCollectionRef.doc().set(site);
+        const pageRef = coldCollectionRef.doc(`page${counter % numPages}`);
+
+        pageRef.update({ sites: admin.firestore.FieldValue.arrayUnion(site) });
+
         counter += 1;
+
+        await sleep(1000 / numPages); // time between editing the same document (page) becomes ~1s
     }
 
     if (sites.length != counter) {
@@ -234,8 +276,13 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
         return;
     }
+
+    // Flip hot and cold collections refs
+    metadataCollectionRef.doc("pagination").set({ coldCollection: hotCollectionStr, hotCollection: coldCollectionStr });
 })
 
+
+// From https://firebase.google.com/docs/firestore/manage-data/delete-data#node.js_2
 async function deleteCollection(collectionRef, batchSize) {
     const db = admin.firestore();
     const query = collectionRef.limit(batchSize);
