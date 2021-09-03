@@ -174,10 +174,10 @@ function convertToDms(dd, isLng) {
     return `${deg}° ${min}' ${sec}" ${direction}`;
 }
 
-function cacheUserPosition(pos, address) {
+function cacheUserPosition(pos) {
     window.localStorage.setItem("lat", pos.lat)
     window.localStorage.setItem("lng", pos.lng)
-    window.localStorage.setItem("address", address)
+        // window.localStorage.setItem("address", address)
     window.localStorage.setItem("userPosLastCached", +Date.now())
 }
 
@@ -198,6 +198,8 @@ async function getUserPosition() {
 
     const userPosLastUpdated = window.localStorage.getItem("userPosLastCached");
 
+    document.getElementById("bi-geo-alt").classList.add("loader__dot");
+
     // Although there is an option to set the timeout for getCurrentPosition, it
     // doesn't seem to work every time. So this function will store the user's
     // position in localStorage and manage when to update it.
@@ -210,16 +212,19 @@ async function getUserPosition() {
 
                 hideAllPositionToasts();
 
-                const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                const address = await getAddressFromPos(p);
+                document.getElementById("bi-geo-alt").classList.remove("loader__dot");
 
-                cacheUserPosition(p, address);
-                document.getElementById("userAddress").innerHTML = address;
+                const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                // const address = await getAddressFromPos(p);
+
+                cacheUserPosition(p);
+                // document.getElementById("userAddress").innerHTML = address;
 
                 success(p);
             }, error => {
 
                 hideAllPositionToasts();
+                document.getElementById("bi-geo-alt").classList.remove("loader__dot");
 
                 if (error.code === 1) {
                     posPermissionDeniedToast.show();
@@ -237,9 +242,9 @@ async function getUserPosition() {
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
         };
-        const address = window.localStorage.getItem("address");
+        // const address = window.localStorage.getItem("address");
 
-        document.getElementById("userAddress").innerHTML = address;
+        // document.getElementById("userAddress").innerHTML = address;
 
         return pos;
     }
@@ -468,7 +473,7 @@ function getAddressFromPos(pos) {
 
 function initialiseAutocompleteAddress() {
     const input = document.getElementById("searchTextField");
-    const autocomplete = new google.maps.places.Autocomplete(input);
+    const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: "au" } });
 
     google.maps.event.addListener(autocomplete, "place_changed", () => {
         const place = autocomplete.getPlace();
@@ -526,7 +531,7 @@ appCheck.activate(
     // tokens as needed.
     true);
 
-const geocoder = new google.maps.Geocoder(); // Used for getting user's address
+// const geocoder = new google.maps.Geocoder(); // Used for getting user's address
 
 google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget
 initialiseAutocompleteAddress();
