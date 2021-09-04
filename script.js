@@ -1,9 +1,9 @@
 // PROD: Flip lines below
-// let functions = firebase.app().functions("australia-southeast1")
-let functions = firebase.app().functions()
+let functions = firebase.app().functions("australia-southeast1")
+    // let functions = firebase.app().functions()
 
 // PROD: Comment out line below
-firebase.functions().useEmulator("localhost", 5001);
+// firebase.functions().useEmulator("localhost", 5001);
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -17,25 +17,6 @@ function calcDist(lat1, lng1, lat2, lng2) {
         Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1_rad) * Math.cos(lat2_rad);
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-}
-
-function fastCalcDist(lat1, lng1, lat2, lng2) {
-    const degsToRads = deg => (deg * Math.PI) / 180.0;
-    let R = 6370.139; // (km) at lat = -37.81895485084791
-    let dLat = degsToRads(lat2 + lat1);
-    let dLng = degsToRads(lng2 - lng1);
-    let lat1_rad = degsToRads(lat1);
-    let lat2_rad = degsToRads(lat2);
-
-    const x = dLng * Math.cos(0.5 * dLat)
-    const y = lat2_rad - lat1_rad
-    return R * Math.sqrt(x * x + y * y)
-}
-
-function fastestCalcDist(lat1, lng1, lat2, lng2) {
-    // pythagoras
-    // I don't think this one is accurate, it shouldn't be used
-    return 111 * Math.sqrt(Math.pow((lat2 - lat1) * Math.cos(lat1), 2) + Math.pow(lng2 - lng1, 2));
 }
 
 function formatDist(dist_km) {
@@ -481,7 +462,8 @@ function initialiseAutocompleteAddress() {
     const options = {
         componentRestrictions: { country: "au" },
         bounds: victoriaBounds,
-        fields: ["geometry.location"]
+        fields: ["geometry.location"],
+        types: ["address"]
     };
     const autocomplete = new google.maps.places.Autocomplete(input, options);
 
@@ -512,7 +494,7 @@ async function locBtnClicked() {
 
     gSites.then(sitesVal => {
         sitesVal.sites.forEach(site => {
-            site.dist_km = fastCalcDist(pos.lat, pos.lng, site.lat, site.lng);
+            site.dist_km = calcDist(pos.lat, pos.lng, site.lat, site.lng);
             site.formattedDist = formatDist(site.dist_km);
         });
 
