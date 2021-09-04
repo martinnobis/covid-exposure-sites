@@ -1,9 +1,9 @@
 // PROD: Flip lines below
-let functions = firebase.app().functions("australia-southeast1")
-    // let functions = firebase.app().functions()
+// let functions = firebase.app().functions("australia-southeast1")
+let functions = firebase.app().functions()
 
 // PROD: Comment out line below
-// firebase.functions().useEmulator("localhost", 5001);
+firebase.functions().useEmulator("localhost", 5001);
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -253,8 +253,8 @@ function paginatedParallelFetch() {
 
 const sitesEndpoint = functions.httpsCallable("sites");
 
-async function offsetSiteFetch(offset, limit) {
-    return sitesEndpoint({ offset: offset, limit: limit })
+async function fetchSites() {
+    return sitesEndpoint()
         .then(response => {
             return response.data;
         });
@@ -312,7 +312,7 @@ async function getSites() {
 
         return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
     } else {
-        return offsetSiteFetch(0, 10000)
+        return fetchSites()
             .then(sitesVal => {
                 cacheSites(sitesVal);
                 sitesToast.hide();
@@ -331,14 +331,14 @@ async function getSitesParallel(batchSize) {
         return { sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
     } else {
         // fetch first batch to get totalSites then do the rest in parallel
-        return offsetSiteFetch(0, batchSize)
+        return fetchSites()
             .then(firstResponse => {
 
                 let offset = batchSize;
                 let remainingSitePs = [];
 
                 while (offset < firstResponse.total) {
-                    remainingSitePs.push(offsetSiteFetch(offset, batchSize))
+                    remainingSitePs.push(fetchSites())
                     offset += batchSize;
                 }
 

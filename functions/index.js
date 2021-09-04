@@ -7,13 +7,12 @@ const fetch = require("node-fetch");
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-const sitesCollectionRef = admin.firestore().collection("allSites");
 const noLocationSitesCollectionRef = admin.firestore().collection("noLocationSites");
 const coordsCollectionRef = admin.firestore().collection("sites");
 const metadataCollectionRef = admin.firestore().collection("metadata");
 
-const sitesAlphaCollectionRef = admin.firestore().collection("sitesAlpha");
-const sitesBravoCollectionRef = admin.firestore().collection("sitesBravo");
+const blueSitesCollectionRef = admin.firestore().collection("blueSites");
+const greenSitesCollectionRef = admin.firestore().collection("greenSites");
 
 const dateFormat = new Intl.DateTimeFormat('en-AU', { weekday: "short", year: "2-digit", month: "numeric", day: 'numeric' });
 
@@ -56,7 +55,6 @@ function parseRawSite(site) {
 
     try {
         return {
-            rawId: site._id,
             hash: getHash(site),
             title: site.Site_title,
             streetAddress: site.Site_streetaddress,
@@ -188,12 +186,20 @@ function foldSites(sites) {
 
 async function getColdCollectionStr() {
     return metadataCollectionRef.doc("pagination").get()
-        .then(doc => doc.data().coldCollection);
+        .then(doc => {
+            const coldCollection = doc.data().coldCollection;
+            console.log(`Returning cold collection str: ${coldCollection}`);
+            return coldCollection;
+        });
 }
 
 async function getHotCollectionStr() {
     return metadataCollectionRef.doc("pagination").get()
-        .then(doc => doc.data().hotCollection);
+        .then(doc => {
+            const hotCollection = doc.data().hotCollection;
+            console.log(`Returning hot collection str: ${hotCollection}`);
+            return hotCollection;
+        });
 }
 
 function sleep(ms) {
@@ -225,13 +231,12 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
 
     // Delete documents in cold collection ref
     const coldCollectionStr = await getColdCollectionStr();
-    const hotCollectionStr = await getHotCollectionStr();
 
     let coldCollectionRef = undefined;
-    if (coldCollectionStr === "sitesAlpha") {
-        coldCollectionRef = sitesAlphaCollectionRef;
+    if (coldCollectionStr === "blueSites") {
+        coldCollectionRef = blueSitesCollectionRef;
     } else {
-        coldCollectionRef = sitesBravoCollectionRef;
+        coldCollectionRef = greenSitesCollectionRef;
     }
     await deleteCollection(coldCollectionRef, 40);
 
@@ -242,7 +247,7 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         coldCollectionRef.doc(`page${i}`).set({ sites: [] });
     }
 
-    let counter = 1;
+    let counter = 0;
     for (site of sites) {
         const coord = await getSiteCoords(site).catch(error => {
             // Don't delete hash and searchParam in this case as it's useful for debugging
@@ -255,30 +260,29 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
         }
         site.lat = coord.location._latitude;
         site.lng = coord.location._longitude;
-        site.id = counter; // VIC data _id starts at 1, might as well align with that
 
         // Not needed on the client side, save space and bandwidth this way
         delete site.hash;
         delete site.searchParam;
 
-        const pageRef = coldCollectionRef.doc(`page${counter % numPages}`);
+        const pageRef = coldCollectionRef.doc(`page${(counter+1) % numPages}`);
 
+        // update is from: https://firebase.google.com/docs/firestore/manage-data/add-data#update_elements_in_an_array
         pageRef.update({ sites: admin.firestore.FieldValue.arrayUnion(site) });
 
         counter += 1;
 
-        await sleep(1000 / numPages); // time between editing the same document (page) becomes ~1s
+        await sleep(1100 / numPages); // time between editing the same document (page) becomes ~1s
     }
+
+    // Flip hot and cold collections refs
+    metadataCollectionRef.doc("pagination").set({ coldCollection: await getHotCollectionStr(), hotCollection: coldCollectionStr });
 
     if (sites.length != counter) {
         functions.logger.error("Total sites:", sites.length);
         functions.logger.error("Sites with coords and written to Firestore", counter);
         metadataCollectionRef.doc("lastUpdateFailure").set({ time: +Date.now() });
-        return;
     }
-
-    // Flip hot and cold collections refs
-    metadataCollectionRef.doc("pagination").set({ coldCollection: hotCollectionStr, hotCollection: coldCollectionStr });
 })
 
 
@@ -316,15 +320,16 @@ async function deleteQueryBatch(db, query, resolve) {
     });
 }
 
-// PROD: flip (prod uses australia-southeast1)
-exports.sites = functions.https.onCall(async(data, context) => {
-    // exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
-    // context.app will be undefined if the request doesn't include a valid app Check token.
-    // from: https://firebase.google.com/docs/app-check/cloud-functions?authuser=0
-    if (context.app == undefined) {
-        throw new functions.https.HttpsError(
-            "failed-precondition",
-            "The function must be called from an App Check verified app.");
+async function getSites() {
+    // Get hot collection
+
+    const hotCollectionStr = await getHotCollectionStr();
+
+    let hotCollectionRef = undefined;
+    if (hotCollectionStr === "blueSites") {
+        hotCollectionRef = blueSitesCollectionRef;
+    } else {
+        hotCollectionRef = greenSitesCollectionRef;
     }
 
     // Get last update success time
@@ -336,46 +341,44 @@ exports.sites = functions.https.onCall(async(data, context) => {
         return { result: "500 - Internal server error." };
     }
 
-    let offset = 0;
-    if (data.offset) {
-        offset = parseInt(data.offset);
-    }
+    const sites = await hotCollectionRef.get()
+        .then(pages => {
+            let s = [];
+            pages.forEach(page => {
+                s = s.concat(page.data().sites);
+            })
+            return s;
+        })
 
-    let limit = 100;
-    if (data.limit) {
-        limit = parseInt(data.limit);
-    }
+    const total = sites.length;
 
-    if (limit < 1) {
-        // No sites requested!
+    if (!total || total <= 0) {
+        // No sites!
         return {
             results: [],
-            offset: offset,
             total: 0,
             lastUpdated: lastUpdated
         };
     }
 
-    const total = await sitesCollectionRef.get()
-        .then(docs => docs.size);
-
-    if (!total) {
-        // No sites!
-        return {
-            results: [],
-            offset: offset,
-            total: 0,
-            lastUpdated: 0
-        };
-    }
-
-    // Start after as ids start at 1
-    let sites = await sitesCollectionRef.orderBy("id").startAfter(offset).limit(limit).get();
-
     return {
-        results: sites.docs.map(site => site.data()),
-        offset: offset,
+        results: sites,
         total: total,
         lastUpdated: lastUpdated
     };
+
+}
+
+// PROD: flip (prod uses australia-southeast1)
+exports.sites = functions.https.onCall(async(data, context) => {
+    // exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
+    // context.app will be undefined if the request doesn't include a valid app Check token.
+    // from: https://firebase.google.com/docs/app-check/cloud-functions?authuser=0
+    if (context.app == undefined) {
+        throw new functions.https.HttpsError(
+            "failed-precondition",
+            "The function must be called from an App Check verified app.");
+    }
+
+    return getSites();
 })
