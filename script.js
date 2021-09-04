@@ -87,13 +87,18 @@ function populateTable(sites, userPos) {
         })
 
         const tier = getMaxTier(site);
-        let badge = ""
+        let tierBadge = undefined;
         if (tier === 1) {
-            badge = `<span class="badge bg-danger">Tier ${tier}</span>`;
+            tierBadge = `<span class="badge bg-danger">Tier ${tier}</span>`;
         } else if (tier === 2) {
-            badge = `<span class="badge bg-warning">Tier ${tier}</span>`;
+            tierBadge = `<span class="badge bg-warning">Tier ${tier}</span>`;
         } else {
-            badge = `<span class="badge bg-secondary">Tier ${tier}</span>`;
+            tierBadge = `<span class="badge bg-secondary">Tier ${tier}</span>`;
+        }
+
+        let numExposuresBadge = "";
+        if (site.exposures.length >= 5) {
+            numExposuresBadge = `<span class="badge bg-primary">5+ exposures</span>`;
         }
 
         let cell = row.insertCell(1);
@@ -124,14 +129,14 @@ function populateTable(sites, userPos) {
         if (site.streetAddress) {
             cell.innerHTML =
                 `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${badge}<div class="fw-bold" >${site.title}</div>${site.streetAddress}
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${tierBadge} ${numExposuresBadge}<div class="fw-bold" >${site.title}</div>${site.streetAddress}
                     ${detail}
                 </div>
             `;
         } else {
             cell.innerHTML =
                 `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${badge}<div class="fw-bold">${site.title}</div>
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${tierBadge} ${numExposuresBadge}<div class="fw-bold">${site.title}</div>
                     ${detail}
                 </div>
             `;
@@ -288,7 +293,7 @@ function prettyTime(ms) {
 const minsToMs = mins => mins * 60000;
 
 function getCachedSites() {
-    const maxAgeMins = 60; // maximum cached sites age
+    const maxAgeMins = 45; // maximum cached sites age
 
     const timeNow = Date.now();
     const sitesVal = window.localStorage.getItem("sitesVal");
@@ -306,10 +311,9 @@ async function getSites() {
     sitesToast.show();
 
     let sitesVal = getCachedSites();
-    if (sitesVal) {
-
+    if (sitesVal && sitesVal.results.length > 0) {
+        // Cover case when some error occured and no sites were downloaded, don't want to wait the whole cache period to redownload sites again
         sitesToast.hide();
-
         return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
     } else {
         return fetchSites()
