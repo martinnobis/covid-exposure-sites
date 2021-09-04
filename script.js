@@ -473,7 +473,17 @@ function getAddressFromPos(pos) {
 
 function initialiseAutocompleteAddress() {
     const input = document.getElementById("searchTextField");
-    const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: "au" } });
+    const victoriaBounds = new google.maps.LatLngBounds(
+        // expected to be sw and ne corners: https://developers.google.com/maps/documentation/javascript/reference/coordinates#LatLngBounds
+        new google.maps.LatLng(-38.7017, 141.1483),
+        new google.maps.LatLng(-35.6718, 149.1826)
+    );
+    const options = {
+        componentRestrictions: { country: "au" },
+        bounds: victoriaBounds,
+        fields: ["geometry.location"]
+    };
+    const autocomplete = new google.maps.places.Autocomplete(input, options);
 
     google.maps.event.addListener(autocomplete, "place_changed", () => {
         const place = autocomplete.getPlace();
