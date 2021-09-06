@@ -32,11 +32,11 @@
 - [x] Set budget for Hosting and Functions (done: can't really set a budget, only alerts)
 - [x] Use separate keys for development/debugging and production (done: only needed frontend autocomplete address)
 - [x] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
-- [ ] Move scroll up button to be inside the toasts div, that way it stacks with them
-- [ ] Give scroll up button a shadow
+- [x] Give scroll up button a shadow
 - [ ] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
 - [ ] Add disclaimer about not all sites appearing
 - [x] Favicon
+- [x] Add quota to throttle address autocomplete calls per user per minute
 - [ ] Site title/description
 - [ ] Check SEO
 - [x] Develop release build process:

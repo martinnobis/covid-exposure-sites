@@ -53,6 +53,7 @@ h1 {
 
 .distCell {
     text-align: center;
+    width: 90px;
     vertical-align: middle;
     font-weight: bold;
     letter-spacing: 0.05em;
@@ -191,9 +192,11 @@ tr:last-child {
 }
 
 #useLocationBtn,
-#useAddressBtn {
+#useAddressBtn,
+#useRecentAddress {
+    width: 100%;
     box-sizing: border-box;
-    min-height: 85px;
+    min-height: 95px;
     text-align: center;
     vertical-align: middle;
 }

@@ -57,8 +57,8 @@ function populateTable(sites, userPos) {
 
     sites.forEach((site, index) => {
 
-        let distCellClasses = ["distCell", "bg-gradient"]
-        let distance = "";
+        let distCellClasses = ["text-nowrap", "distCell", "bg-gradient"]
+        let distance;
         if (!userPos || !site.formattedDist || !site.dist_km) {
             distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
             distance = `<span class="loader__dot ">?</span>`;
@@ -129,7 +129,7 @@ function populateTable(sites, userPos) {
         if (site.streetAddress) {
             cell.innerHTML =
                 `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${tierBadge} ${numExposuresBadge}<div class="fw-bold" >${site.title}</div>${site.streetAddress}
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${tierBadge} ${numExposuresBadge}<div class="fw-bold">${site.title}</div>${site.streetAddress}
                     ${detail}
                 </div>
             `;
@@ -370,59 +370,26 @@ const posTimeoutToast = new bootstrap.Toast(document.getElementById("posTimeoutT
 
 const useLocationBtn = document.getElementById("useLocationBtn");
 const useAddressBtn = document.getElementById("useAddressBtn");
+const useRecentAddress = document.getElementById("useRecentAddress");
 
 useLocationBtn.addEventListener("click", () => {
-    activateUseLocationBtn();
+    activateLocBtn(useLocationBtn);
+    deactivateLocBtn(useAddressBtn);
+    deactivateLocBtn(useRecentAddress); // deactivate the div
+    deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
+
+    activeLocBtn = "user";
+
+    locBtnClicked();
 });
 
 useAddressBtn.addEventListener("click", () => {
-    activateAddressLocationBtn();
-});
+    activateLocBtn(useAddressBtn);
+    deactivateLocBtn(useLocationBtn);
+    deactivateLocBtn(useRecentAddress); // deactivate the div
+    deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
 
-function activateUseLocationBtn() {
-    useLocationBtn.classList.add("shadow");
-    useLocationBtn.classList.add("border-primary");
-    useLocationBtn.classList.add("border-2");
-    useLocationBtn.classList.remove("border-dark");
-    useLocationBtn.classList.remove("opacity-50");
-
-    useAddressBtn.classList.remove("shadow");
-    useAddressBtn.classList.remove("border-primary");
-    useAddressBtn.classList.remove("border-2");
-    useAddressBtn.classList.add("border-dark");
-    useAddressBtn.classList.add("opacity-50");
-
-    userLocBtnActive = true;
-
-    locBtnClicked();
-}
-
-useLocationBtn.addEventListener("mouseover", () => {
-    useLocationBtn.classList.remove("btn-white");
-    useLocationBtn.classList.add("btn-light");
-})
-
-useLocationBtn.addEventListener("mouseout", () => {
-    useLocationBtn.classList.add("btn-white");
-    useLocationBtn.classList.remove("btn-light");
-})
-
-function activateAddressLocationBtn() {
-    // activate this one
-    useAddressBtn.classList.add("shadow");
-    useAddressBtn.classList.add("border-primary");
-    useAddressBtn.classList.add("border-2");
-    useAddressBtn.classList.remove("border-dark");
-    useAddressBtn.classList.remove("opacity-50");
-
-    // deactivate this one
-    useLocationBtn.classList.remove("shadow");
-    useLocationBtn.classList.remove("border-primary");
-    useLocationBtn.classList.remove("border-2");
-    useLocationBtn.classList.add("border-dark");
-    useLocationBtn.classList.add("opacity-50");
-
-    userLocBtnActive = false;
+    activeLocBtn = "address";
 
     // Remove any pos toast errors
     posPermissionDeniedToast.hide();
@@ -430,18 +397,41 @@ function activateAddressLocationBtn() {
     posTimeoutToast.hide();
 
     locBtnClicked();
+});
+
+useRecentAddress.addEventListener("click", () => {
+    activateLocBtn(useRecentAddress);
+    deactivateLocBtn(useLocationBtn);
+    deactivateLocBtn(useAddressBtn);
+
+    // get the last active recentAddress button
+    let activeRecentAddress = gRecentAddressElements.find(e => e.active);
+    // and activate it
+    activeRecentAddress && activateRecentAddressBtn(activeRecentAddress.button);
+
+    activeLocBtn = "recentAddress";
+
+    // Remove any pos toast errors
+    posPermissionDeniedToast.hide();
+    posUnavailableToast.hide();
+    posTimeoutToast.hide();
+
+    locBtnClicked();
+});
+
+function activateLocBtn(button) {
+    button.classList.add("shadow");
+    button.classList.add("border-primary");
+    button.classList.remove("border-dark");
+    button.classList.remove("opacity-50");
 }
 
-useAddressBtn.addEventListener("mouseover", () => {
-    useAddressBtn.classList.remove("btn-white");
-    useAddressBtn.classList.add("btn-light");
-})
-
-useAddressBtn.addEventListener("mouseout", () => {
-    useAddressBtn.classList.add("btn-white");
-    useAddressBtn.classList.remove("btn-light");
-})
-
+function deactivateLocBtn(button) {
+    button.classList.remove("shadow");
+    button.classList.remove("border-primary");
+    button.classList.add("border-dark");
+    button.classList.add("opacity-50");
+}
 
 function getAddressFromPos(pos) {
     return geocoder
@@ -454,6 +444,145 @@ function getAddressFromPos(pos) {
             }
         })
         .catch((e) => window.alert("Geocoder failed due to: " + e));
+}
+
+// stores:
+//      address string; used to get the lat/lng when selecting this recent address
+//      button element; used to activate/deactivate which just involves styling
+//      boolean whether or not it's active; state, used to activate it again when the recentAddress div is selected
+let gRecentAddressElements = [];
+
+function deactivateAllRecentAddressBtns() {
+    gRecentAddressElements.forEach(a => deactivateRecentAddressBtn(a.button));
+}
+
+function activateRecentAddressBtn(addressBtn) {
+    addressBtn.classList.add("text-primary");
+    addressBtn.classList.add("border-primary");
+}
+
+function deactivateRecentAddressBtn(addressBtn) {
+    addressBtn.classList.remove("text-primary");
+    addressBtn.classList.remove("border-primary");
+}
+
+function addAddressToRecentWidget(address) {
+    const hash = address.toLowerCase().replace(/[^\w\d]/g, ""); // just something concise to use
+
+    let recentAddresses = document.getElementById("recentAddresses");
+
+    const template = document.getElementById("recentAddressTemplate");
+    const clone = template.content.cloneNode(true);
+
+    let clonedElement = clone.querySelector("div"); // get it's first element which is a div
+
+    clonedElement.id = hash;
+    let addressBtn = clonedElement.firstElementChild;
+    let closeBtn = clonedElement.lastElementChild;
+
+    gRecentAddressElements.push({ address: address, button: addressBtn, active: false });
+
+    addressBtn.textContent = address;
+
+    // add to DOM
+    recentAddresses.prepend(clone);
+
+    removeNoRecentAddressesMsg();
+
+    closeBtn.addEventListener("click", () => {
+        // remove element from DOM
+        document.getElementById(hash).remove();
+
+        // remove address from global var
+        gRecentAddressElements = gRecentAddressElements.filter(e => e.address !== address);
+
+        // remove address from cache
+        deCacheAddress(address);
+
+        // add the no recent address message if required
+        addNoRecentAddressesMsg();
+    })
+
+    addressBtn.addEventListener("click", () => {
+
+        // set the global lat/lng values when using recent addresses
+        setgRecentAddressPosFromRecentAddress(address);
+
+        // disable all recent address elements
+        deactivateAllRecentAddressBtns();
+
+        // activate this one
+        activateRecentAddressBtn(addressBtn);
+
+        // set all others btns to inactive
+        gRecentAddressElements.forEach(e => e.active = false);
+
+        // set this one to active
+        let addressObj = gRecentAddressElements.find(e => e.address === address);
+        addressObj.active = true;
+
+        // note that activating the useRecentAddress div is already handled as it's the parent of an recentAddressBtn
+    })
+}
+
+function setgRecentAddressPosFromRecentAddress(address) {
+    let addressesStr = window.localStorage.getItem("recentAddresses");
+
+    // Find address in cache, get pos and then set the gRecentAddress* vars
+    if (!addressesStr) {
+        // this should never happen
+        console.error(`Could not find cached data for recent address: ${address}`);
+        return;
+    } else {
+        const foundAddress = JSON.parse(addressesStr).find(e => e.address === address);
+        gRecentAddressLat = foundAddress.lat;
+        gRecentAddressLng = foundAddress.lng;
+
+        locBtnClicked();
+    }
+}
+
+function addNoRecentAddressesMsg() {
+    const noRecentAddressStr = `
+        <p id="noRecentAddressMsg" class="fst-italic pt-2" style="font-size: .90em">No recent addresses</p>
+    `;
+
+    const recentAddressesStr = window.localStorage.getItem("recentAddresses");
+    if (!recentAddressesStr || JSON.parse(recentAddressesStr).length <= 0) {
+        // TODO: change to checking whether or not the div with id=recentAddresses has children
+        document.getElementById("recentAddresses").innerHTML = noRecentAddressStr;
+    }
+}
+
+function removeNoRecentAddressesMsg() {
+    let element = document.getElementById("noRecentAddressMsg");
+    element && element.remove();
+}
+
+function cacheAddress(address, lat, lng) {
+    let addresses = window.localStorage.getItem("recentAddresses");
+
+    if (!addresses) {
+        // first address, add it
+        window.localStorage.setItem("recentAddresses", JSON.stringify([{ address: address, lat: lat, lng: lng }]));
+    } else {
+        // append to existing array and re set it
+        let temp = JSON.parse(addresses);
+        temp.push({ address: address, lat: lat, lng: lng });
+        window.localStorage.setItem("recentAddresses", JSON.stringify(temp));
+    }
+    console.log(`cached address: ${address}`);
+}
+
+function deCacheAddress(address) {
+    let addressesStr = window.localStorage.getItem("recentAddresses");
+
+    if (addressesStr) {
+        const addresses = JSON.parse(addressesStr);
+        const filteredAddresses = addresses.filter(a => a.address !== address);
+        window.localStorage.setItem("recentAddresses", JSON.stringify(filteredAddresses));
+        console.log(`decached address: ${address}`);
+    }
 }
 
 function initialiseAutocompleteAddress() {
@@ -476,15 +605,22 @@ function initialiseAutocompleteAddress() {
         gAddressLat = place.geometry.location.lat();
         gAddressLng = place.geometry.location.lng();
 
+        const address = input.value.replace(", Australia", "");
+        cacheAddress(address, gAddressLat, gAddressLng);
+        addAddressToRecentWidget(address);
+
         locBtnClicked();
     });
 }
 
 function getPosition() {
-    if (userLocBtnActive) {
+    if (activeLocBtn === "user") {
         return getUserPosition();
-    } else {
+    } else if (activeLocBtn === "address") {
         return { lat: gAddressLat, lng: gAddressLng, acc: 0 };
+    } else {
+        // activeLocBtn === "recentAddress"
+        return { lat: gRecentAddressLat, lng: gRecentAddressLng, acc: 0 };
     }
 }
 
@@ -515,6 +651,15 @@ async function locBtnClicked() {
     });
 }
 
+function restoreRecentAddressesFromCache() {
+    const addressesStr = window.localStorage.getItem("recentAddresses");
+
+    if (addressesStr) {
+        const addresses = JSON.parse(addressesStr);
+        addresses.forEach(a => addAddressToRecentWidget(a.address));
+    }
+}
+
 // Start here
 
 const appCheck = firebase.appCheck();
@@ -527,15 +672,18 @@ appCheck.activate(
     // tokens as needed.
     true);
 
-// const geocoder = new google.maps.Geocoder(); // Used for getting user's address
-
 google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget
 initialiseAutocompleteAddress();
 
-let userLocBtnActive = null;
+restoreRecentAddressesFromCache();
+addNoRecentAddressesMsg(); // will add if required
 
-let gAddressLat = null;
-let gAddressLng = null;
+let userLocBtnActive;
+
+let gAddressLat;
+let gAddressLng;
+let gRecentAddressLat;
+let gRecentAddressLng;
 
 let gSites = getSites()
     .then(sitesVal => {

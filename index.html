@@ -41,51 +41,80 @@
 
 <body>
 
-    <div class="p-3 bg-light rounded-3">
+    <!-- Templates -->
+
+    <template id="recentAddressTemplate">
+        <div class="d-flex align-items-center my-1">
+            <button type="button" style="text-align: left; font-size: .90em;" class="btn btn-light flex-grow-1 ms-1"></button>
+            <button type="button" class="btn-close ms-1" aria-label="Close"></button>
+        </div>
+    </template>
+
+    <div class="bg-light px-2">
         <div class="container-md">
-            <div class="container-fluid py-3">
-                <h1 class="display-5 fw-bold">Covid-19 exposure sites near me</h1>
-                <p class="col-md-8 fs-4 fst-italic text-muted">Victoria only</p>
 
+            <h1 class="display-5 fw-bold">Covid-19 exposure sites near me</h1>
+            <p class="col-md-8 fs-4 fst-italic text-muted">Victoria only</p>
 
+            <div class="row g-2 my-3">
 
-                <div class="row g-2 my-5">
-                    <div class="col-sm">
-                        <button id="useLocationBtn" style="width: 100%; height: 100%" type="button" class="btn btn-white justify-content-center align-items-center border border-dark col p-3 opacity-50">
-                    <h5 class="mb-1">
-                        <svg id="bi-geo-alt" xmlns="http://www.w3.org/2000/svg" width="32" height="32" class="bi bi-geo-alt" viewBox="0 0 16 16">
-                            <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z"/>
-                            <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-                          </svg>
-                        Use my location
-                    </h5>
-                    <div id="userAddress" class="fst-italic"></div>
-                </button>
-                    </div>
-                    <div class="col-sm">
-                        <button id="useAddressBtn" style="width: 100%; height: 100%" type="button" class="btn btn-white border border-dark col p-3 opacity-50">
-                    <h5 class="mb-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="bi bi-house" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M2 13.5V7h1v6.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V7h1v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5zm11-11V6l-2-2V2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5z"/>
-                            <path fill-rule="evenodd" d="M7.293 1.5a1 1 0 0 1 1.414 0l6.647 6.646a.5.5 0 0 1-.708.708L8 2.207 1.354 8.854a.5.5 0 1 1-.708-.708L7.293 1.5z"/>
-                          </svg>
-                        Use an address</h5>
-                    <input style="width: 100%" id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
-                </button>
-                    </div>
+                <div class="col-sm">
+                    <!-- Use my location -->
+                    <button id="useLocationBtn" type="button" class="btn btn-white justify-content-center align-items-center border border-dark col p-3 opacity-50">
+                            <h5 class="text-nowrap">
+                                <svg id="bi-geo-alt" xmlns="http://www.w3.org/2000/svg" width="32" height="32" class="bi bi-geo-alt" viewBox="0 0 16 16">
+                                    <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z"/>
+                                    <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                </svg>
+                                Use my location
+                            </h5>
+                        <div id="userAddress" class="fst-italic"></div>
+                        </button>
                 </div>
 
-                <p id="numSites"></p>
-                <p id="numExposures"></p>
-                <p id="lastUpdated"></p>
-                <p id="showingSites"></p>
+                <div class="col-sm">
+                    <!-- Use an address -->
+                    <button id="useAddressBtn" type="button" class="btn btn-white border border-dark col p-3 opacity-50">
+                            <h5 class="text-nowrap">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="bi bi-house" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M2 13.5V7h1v6.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V7h1v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5zm11-11V6l-2-2V2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5z"/>
+                                    <path fill-rule="evenodd" d="M7.293 1.5a1 1 0 0 1 1.414 0l6.647 6.646a.5.5 0 0 1-.708.708L8 2.207 1.354 8.854a.5.5 0 1 1-.708-.708L7.293 1.5z"/>
+                                </svg>
+                            Use an address
+                            </h5>
+                            <input style="width: 100%" id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
+
+                    </button>
+                </div>
+
+                <div class="col-sm">
+                    <!-- Recent addresses -->
+                    <div id="useRecentAddress" class="bg-white border rounded border-dark col pt-3 pb-2 px-2 opacity-50">
+
+                        <h5 class="text-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock" viewBox="0 0 16 16">
+                                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+                            </svg> Use recent address
+                        </h5>
+
+                        <div id="recentAddresses" style="max-height: 120px;" class="overflow-auto">
+                            <!-- recentAddress instances go here -->
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <p id="numSites"></p>
+            <p id="numExposures"></p>
+            <p id="lastUpdated"></p>
+            <p id="showingSites"></p>
+
         </div>
     </div>
 
     <!-- light wave -->
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 250"><path fill="#f8f9fa" fill-opacity="1" d="M0,128L48,122.7C96,117,192,107,288,112C384,117,480,139,576,154.7C672,171,768,181,864,154.7C960,128,1056,64,1152,64C1248,64,1344,128,1392,160L1440,192L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path></svg>
-
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 220"><path fill="#f8f9fa" fill-opacity="1" d="M0,128L48,122.7C96,117,192,107,288,112C384,117,480,139,576,154.7C672,171,768,181,864,154.7C960,128,1056,64,1152,64C1248,64,1344,128,1392,160L1440,192L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path></svg>
 
 
     <!-- <div class="dropdown">
@@ -111,7 +140,6 @@
             </div>
         </div>
     </div> -->
-
 
     <!-- Table -->
 
