@@ -34,6 +34,7 @@
 - [x] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
 - [x] Give scroll up button a shadow
 - [ ] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
+- [ ] Add and remove the back to top button to the DOM instead of just hiding it
 - [ ] Add disclaimer about not all sites appearing
 - [x] Favicon
 - [x] Add quota to throttle address autocomplete calls per user per minute

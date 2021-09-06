@@ -1,9 +1,9 @@
 // PROD: Flip lines below
-// let functions = firebase.app().functions("australia-southeast1")
-let functions = firebase.app().functions()
+let functions = firebase.app().functions("australia-southeast1")
+    // let functions = firebase.app().functions()
 
 // PROD: Comment out line below
-firebase.functions().useEmulator("localhost", 5001);
+// firebase.functions().useEmulator("localhost", 5001);
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -163,7 +163,6 @@ function convertToDms(dd, isLng) {
 function cacheUserPosition(pos) {
     window.localStorage.setItem("lat", pos.lat)
     window.localStorage.setItem("lng", pos.lng)
-        // window.localStorage.setItem("address", address)
     window.localStorage.setItem("userPosLastCached", +Date.now())
 }
 
@@ -173,6 +172,9 @@ function hideAllPositionToasts() {
     posPermissionDeniedToast.hide();
     posUnavailableToast.hide();
     posTimeoutToast.hide();
+
+    // and stop blinking the icon
+    document.getElementById("bi-geo-alt").classList.remove("loader__dot");
 }
 
 async function getUserPosition() {
@@ -198,19 +200,14 @@ async function getUserPosition() {
 
                 hideAllPositionToasts();
 
-                document.getElementById("bi-geo-alt").classList.remove("loader__dot");
-
                 const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                // const address = await getAddressFromPos(p);
 
                 cacheUserPosition(p);
-                // document.getElementById("userAddress").innerHTML = address;
 
                 success(p);
             }, error => {
 
                 hideAllPositionToasts();
-                document.getElementById("bi-geo-alt").classList.remove("loader__dot");
 
                 if (error.code === 1) {
                     posPermissionDeniedToast.show();
@@ -224,38 +221,11 @@ async function getUserPosition() {
     } else {
         hideAllPositionToasts();
 
-        document.getElementById("bi-geo-alt").classList.remove("loader__dot");
-
-        const pos = {
+        return {
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
         };
-        // const address = window.localStorage.getItem("address");
-
-        // document.getElementById("userAddress").innerHTML = address;
-
-        return pos;
     }
-}
-
-function paginatedParallelFetch() {
-    return fetch(sitesUrl(0))
-        .then(response => response.json())
-        .then(responseJson => {
-            let rawSites = [responseJson.result.records]
-            let offset = 100;
-            while (offset < responseJson.result.total) {
-                rawSites.push(
-                    fetch(sitesUrl(offset))
-                    .then(response => response.json())
-                    .then(responseJson => responseJson.result.records))
-                offset += 100;
-            }
-
-            return Promise.all(rawSites).then(rawSites => {
-                return rawSites.reduce((acc, curr) => [...acc, ...curr])
-            })
-        })
 }
 
 const sitesEndpoint = functions.httpsCallable("sites");
@@ -264,21 +234,6 @@ async function fetchSites() {
     return sitesEndpoint()
         .then(response => {
             return response.data;
-        });
-}
-
-function paginatedSiteFetch(offset, prevResponse) {
-    const sitesUrl = offset => `http://localhost:5001/covid-exposure-sites-322711/us-central1/getSites?offset=${offset}`
-    return fetch(sitesUrl(offset))
-        .then(response => response.json())
-        .then(responseJson => {
-            const response = [...prevResponse, ...responseJson.results]; // combine the two arrays
-
-            offset += 100;
-            if (offset < responseJson.total) {
-                return paginatedSiteFetch(offset, response);
-            }
-            return response;
         });
 }
 
@@ -380,7 +335,7 @@ useLocationBtn.addEventListener("click", () => {
     deactivateLocBtn(useRecentAddress); // deactivate the div
     deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
 
-    activeLocBtn = "user";
+    gActiveLocBtn = "user";
 
     locBtnClicked();
 });
@@ -391,7 +346,7 @@ useAddressBtn.addEventListener("click", () => {
     deactivateLocBtn(useRecentAddress); // deactivate the div
     deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
 
-    activeLocBtn = "address";
+    gActiveLocBtn = "address";
 
     // Remove any pos toast errors
     posPermissionDeniedToast.hide();
@@ -401,17 +356,12 @@ useAddressBtn.addEventListener("click", () => {
     locBtnClicked();
 });
 
-useRecentAddress.addEventListener("click", () => {
+function useRecentAddressClicked() {
     activateLocBtn(useRecentAddress);
     deactivateLocBtn(useLocationBtn);
     deactivateLocBtn(useAddressBtn);
 
-    // get the last active recentAddress button
-    let activeRecentAddress = gRecentAddressElements.find(e => e.active);
-    // and activate it
-    activeRecentAddress && activateRecentAddressBtn(activeRecentAddress.button);
-
-    activeLocBtn = "recentAddress";
+    gActiveLocBtn = "recentAddress";
 
     // Remove any pos toast errors
     posPermissionDeniedToast.hide();
@@ -419,7 +369,7 @@ useRecentAddress.addEventListener("click", () => {
     posTimeoutToast.hide();
 
     locBtnClicked();
-});
+};
 
 function activateLocBtn(button) {
     button.classList.add("shadow");
@@ -437,28 +387,11 @@ function deactivateLocBtn(button) {
     button.classList.add("opacity-50");
 }
 
-function getAddressFromPos(pos) {
-    return geocoder
-        .geocode({ location: pos })
-        .then(response => {
-            if (response.results[0]) {
-                return response.results[0].formatted_address.replace(", Australia", "");
-            } else {
-                window.alert("No results found");
-            }
-        })
-        .catch((e) => window.alert("Geocoder failed due to: " + e));
-}
-
 // stores:
 //      address string; used to get the lat/lng when selecting this recent address
 //      button element; used to activate/deactivate which just involves styling
-//      boolean whether or not it's active; state, used to activate it again when the recentAddress div is selected
 let gRecentAddressElements = [];
 
-function deactivateAllRecentAddressBtns() {
-    gRecentAddressElements.forEach(a => deactivateRecentAddressBtn(a.button));
-}
 
 function activateRecentAddressBtn(addressBtn) {
     addressBtn.classList.add("text-primary");
@@ -468,6 +401,10 @@ function activateRecentAddressBtn(addressBtn) {
 function deactivateRecentAddressBtn(addressBtn) {
     addressBtn.classList.remove("text-primary");
     addressBtn.classList.remove("border-primary");
+}
+
+function deactivateAllRecentAddressBtns() {
+    gRecentAddressElements.forEach(a => deactivateRecentAddressBtn(a.button));
 }
 
 function addAddressToRecentWidget(address) {
@@ -484,7 +421,7 @@ function addAddressToRecentWidget(address) {
     let addressBtn = clonedElement.firstElementChild;
     let closeBtn = clonedElement.lastElementChild;
 
-    gRecentAddressElements.push({ address: address, button: addressBtn, active: false });
+    gRecentAddressElements.push({ address: address, button: addressBtn });
 
     addressBtn.textContent = address;
 
@@ -518,12 +455,7 @@ function addAddressToRecentWidget(address) {
         // activate this one
         activateRecentAddressBtn(addressBtn);
 
-        // set all others btns to inactive
-        gRecentAddressElements.forEach(e => e.active = false);
-
-        // set this one to active
-        let addressObj = gRecentAddressElements.find(e => e.address === address);
-        addressObj.active = true;
+        useRecentAddressClicked(); // previously handled by a clicked event on the div
 
         // note that activating the useRecentAddress div is already handled as it's the parent of an recentAddressBtn
     })
@@ -600,7 +532,6 @@ function initialiseAutocompleteAddress() {
         componentRestrictions: { country: "au" },
         bounds: victoriaBounds,
         fields: ["geometry.location"],
-        types: ["address"]
     };
     const autocomplete = new google.maps.places.Autocomplete(input, options);
 
@@ -617,13 +548,15 @@ function initialiseAutocompleteAddress() {
     });
 }
 
+let gActiveLocBtn;
+
 function getPosition() {
-    if (activeLocBtn === "user") {
+    if (gActiveLocBtn === "user") {
         return getUserPosition();
-    } else if (activeLocBtn === "address") {
+    } else if (gActiveLocBtn === "address") {
         return { lat: gAddressLat, lng: gAddressLng, acc: 0 };
     } else {
-        // activeLocBtn === "recentAddress"
+        // gActiveLocBtn === "recentAddress"
         return { lat: gRecentAddressLat, lng: gRecentAddressLng, acc: 0 };
     }
 }
@@ -682,8 +615,6 @@ initialiseAutocompleteAddress();
 restoreRecentAddressesFromCache();
 addNoRecentAddressesMsg(); // will add if required
 
-let userLocBtnActive;
-
 let gAddressLat;
 let gAddressLng;
 let gRecentAddressLat;
@@ -712,6 +643,7 @@ let backToTopBtn = document.getElementById("backToTopBtn");
 // When the user scrolls down some amount of px from the top of the document, show the button
 window.onscroll = () => {
     if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+        // TODO: add it to the DOM instead of just making it appear
         backToTopBtn.classList.add("load");
     } else {
         backToTopBtn.classList.remove("load");
