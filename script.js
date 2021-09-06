@@ -224,6 +224,8 @@ async function getUserPosition() {
     } else {
         hideAllPositionToasts();
 
+        document.getElementById("bi-geo-alt").classList.remove("loader__dot");
+
         const pos = {
             lat: parseFloat(window.localStorage.getItem("lat")),
             lng: parseFloat(window.localStorage.getItem("lng")),
@@ -424,11 +426,13 @@ function activateLocBtn(button) {
     button.classList.add("border-primary");
     button.classList.remove("border-dark");
     button.classList.remove("opacity-50");
+    button.querySelector("h5").classList.add("text-primary");
 }
 
 function deactivateLocBtn(button) {
     button.classList.remove("shadow");
     button.classList.remove("border-primary");
+    button.querySelector("h5").classList.remove("text-primary");
     button.classList.add("border-dark");
     button.classList.add("opacity-50");
 }
