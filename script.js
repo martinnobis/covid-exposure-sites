@@ -1,9 +1,9 @@
 // PROD: Flip lines below
-let functions = firebase.app().functions("australia-southeast1")
-    // let functions = firebase.app().functions()
+// let functions = firebase.app().functions("australia-southeast1")
+let functions = firebase.app().functions()
 
 // PROD: Comment out line below
-// firebase.functions().useEmulator("localhost", 5001);
+firebase.functions().useEmulator("localhost", 5001);
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -127,10 +127,13 @@ function populateTable(sites, userPos) {
             </table>`;
 
         if (site.streetAddress) {
-            cell.innerHTML =
-                `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${tierBadge} ${numExposuresBadge}<div class="fw-bold">${site.title}</div>${site.streetAddress}
-                    ${detail}
+            let address = site.streetAddress;
+            if (site.suburb) {
+                address = address.concat(`, ${site.suburb}`);
+            }
+            cell.innerHTML = `
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
+                    ${tierBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>${address} ${detail}
                 </div>
             `;
         } else {
