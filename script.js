@@ -68,13 +68,13 @@ function populateTable(sites, userPos) {
 
             if (site.dist_km * 1000 < userPos.acc) {
                 distance = `<${Math.ceil(userPos.acc / 10) * 10}m`;
-                distCellClasses = distCellClasses.concat(["text-light", "bg-dark"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-dark", "distCellShadow"]);
             } else if (site.dist_km < 0.200) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-danger"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-danger", "distCellShadow"]);
             } else if (site.dist_km < 1) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-warning"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-warning", "distCellShadow"]);
             } else if (site.dist_km < 5) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-secondary"]);
+                distCellClasses = distCellClasses.concat(["text-light", "bg-secondary", "distCellShadow"]);
             } else {
                 distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
             }
