@@ -16,11 +16,6 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
 
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
-    <!-- PROD: flip -->
-    <!-- <link rel="stylesheet" href="style.min.css"> -->
-    <link rel="stylesheet" href="style.css">
-
     <!-- PROD: switch (first is dev)-->
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script>
     <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO_F5kQ-eVc8KKMoHDMKMG6VgEd-h_lOM&libraries=places"></script> -->
@@ -303,7 +298,6 @@
           </svg>
     </a>
 
-
     <!-- Footer -->
 
     <div class="container">
@@ -319,24 +313,22 @@
 
 </body>
 
-<script src="/__/firebase/8.10.0/firebase-app.js"></script>
-
-<!-- PROD: comment out this line -->
+<!-- PROD: comment out line, required for dev -->
 <script>
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 </script>
 
-<script src="/__/firebase/8.10.0/firebase-app-check.js"></script>
-<script src="/__/firebase/8.10.0/firebase-functions.js"></script>
+<!-- <script src="/__/firebase/8.10.0/firebase-app-check.js"></script>
+<script src="/__/firebase/8.10.0/firebase-functions.js"></script> -->
 
 <!-- PROD: Remove useEmulator -->
-<script src="/__/firebase/init.js?useEmulator=true"></script>
+<!-- <script src="/__/firebase/init.js?useEmulator=true"></script> -->
 <!-- <script src="/__/firebase/init.js"></script> -->
 
-<script src="bootstrap/bootstrap.bundle.min.js"></script>
+<!-- <script src="bootstrap/bootstrap.bundle.min.js"></script> -->
 
 <!-- PROD: use minified -->
 <!-- <script src="script.min.js"></script> -->
-<script src="script.js"></script>
+<script src="./index.bundle.js"></script>
 
 </html>

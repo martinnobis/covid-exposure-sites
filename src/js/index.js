@@ -1,9 +1,42 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+const { initializeAppCheck, ReCaptchaV3Provider } = require("firebase/app-check");
+
+// bootstrap is imported in entry point
+
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+    apiKey: "AIzaSyC1aoCqmyGDkkFeQf8SBqVO8OzyWS_c79c",
+    authDomain: "covid-exposure-sites-322711.firebaseapp.com",
+    projectId: "covid-exposure-sites-322711",
+    storageBucket: "covid-exposure-sites-322711.appspot.com",
+    messagingSenderId: "276780810083",
+    appId: "1:276780810083:web:80818314276c32a334dd56",
+    measurementId: "G-1YFWXV08HE"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfG7DccAAAAAE6Jgk9hCoPB1egUCFVWuvUjGRxW'),
+
+    // Optional argument. If true, the SDK automatically refreshes App Check
+    // tokens as needed.
+    isTokenAutoRefreshEnabled: true
+});
+
+const functions = getFunctions(app);
+connectFunctionsEmulator(functions, "localhost", 5001);
+
 // PROD: Flip lines below
 // let functions = firebase.app().functions("australia-southeast1")
-let functions = firebase.app().functions()
-
-// PROD: Comment out line below
-firebase.functions().useEmulator("localhost", 5001);
+// let functions = firebase.app().functions()
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -113,7 +146,8 @@ function populateTable(sites, userPos) {
         })
 
         const detail = `
-            <table class="table collapse" id="collapseSite${index}">
+        <div class="collapse" id="collapseSite${index}">
+            <table class="table">
                 <thead class="text-muted">
                     <tr>
                         <th class="fw-light"><small>Exposure</small></th>
@@ -124,7 +158,8 @@ function populateTable(sites, userPos) {
                 <tbody>
                     ${exposuresHTML.join("")}
                 </tbody>
-            </table>`;
+            </table>
+        </div>`;
 
         if (site.streetAddress) {
             let address = site.streetAddress;
@@ -132,7 +167,7 @@ function populateTable(sites, userPos) {
                 address = address.concat(`, ${site.suburb}`);
             }
             cell.innerHTML = `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
+                <div data-bs-toggle="collapse" data-bs-target="#collapseSite${index}" aria-controls="collapseSite${index}" role="button">
                     ${tierBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>${address} ${detail}
                 </div>
             `;
@@ -231,7 +266,7 @@ async function getUserPosition() {
     }
 }
 
-const sitesEndpoint = functions.httpsCallable("sites");
+const sitesEndpoint = httpsCallable(functions, "sites");
 
 async function fetchSites() {
     return sitesEndpoint()
@@ -282,42 +317,6 @@ async function getSites() {
                 sitesToast.hide();
                 return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
             });
-    }
-}
-
-async function getSitesParallel(batchSize) {
-
-    sitesToast.show();
-
-    let sitesVal = getCachedSites();
-    if (sitesVal) {
-        sitesToast.hide();
-        return { sites: sitesVal.sites, lastUpdated: sitesVal.lastUpdated };
-    } else {
-        // fetch first batch to get totalSites then do the rest in parallel
-        return fetchSites()
-            .then(firstResponse => {
-
-                let offset = batchSize;
-                let remainingSitePs = [];
-
-                while (offset < firstResponse.total) {
-                    remainingSitePs.push(fetchSites())
-                    offset += batchSize;
-                }
-
-                return Promise.all(remainingSitePs).then(remainingSiteResponses => {
-                    // collate sites (there's probably a better way of doing this)
-                    let s = firstResponse.results;
-                    remainingSiteResponses.forEach(res => {
-                        s = [...s, ...res.results];
-                    })
-
-                    sitesToast.hide();
-
-                    return { sites: s, lastUpdated: firstResponse.lastUpdated };
-                })
-            })
     }
 }
 
@@ -601,16 +600,6 @@ function restoreRecentAddressesFromCache() {
 }
 
 // Start here
-
-const appCheck = firebase.appCheck();
-// Pass your reCAPTCHA v3 site key (public key) to activate(). Make sure this
-// key is the counterpart to the secret key you set in the Firebase console.
-appCheck.activate(
-    "6LfG7DccAAAAAE6Jgk9hCoPB1egUCFVWuvUjGRxW",
-
-    // Optional argument. If true, the SDK automatically refreshes App Check
-    // tokens as needed.
-    true);
 
 google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget
 initialiseAutocompleteAddress();

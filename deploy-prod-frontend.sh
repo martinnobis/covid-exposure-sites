@@ -1,6 +1,7 @@
 #!/bin/sh
 
-uglifyjs script.js -m toplevel -c -o public/script.min.js -c drop_console
+# uglifyjs script.js -m toplevel -c -o public/script.min.js -c drop_console
+cp -r dist/ public/
 
 html-minifier \
     --collapse-whitespace \
@@ -38,6 +39,6 @@ html-minifier \
     --minify-js true \
     acceptableuse.html -o public/acceptableuse.html
 
-cssnano < style.css > public/style.min.css
+# cssnano < style.css > public/style.min.css
 
-rm -f public/style.css public/script.js
+# rm -f public/style.css public/script.js

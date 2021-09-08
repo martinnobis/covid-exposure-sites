@@ -209,3 +209,10 @@ tr:last-child {
     /* .container elements adds a padding of 15px in Bootstrap. */
     padding: 0px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .collapsing {
+        transition-property: height, visibility;
+        transition-duration: .35s;
+    }
+}
