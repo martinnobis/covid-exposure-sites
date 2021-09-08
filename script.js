@@ -112,8 +112,11 @@ function populateTable(sites, userPos) {
             </tr>`;
         })
 
+        // collapse class has to be in it's own separate div without any 
+        // padding for the animation to work.
         const detail = `
-            <table class="table collapse" id="collapseSite${index}">
+        <div class="collapse" id="collapseSite${index}">
+            <table class="table">
                 <thead class="text-muted">
                     <tr>
                         <th class="fw-light"><small>Exposure</small></th>
@@ -124,7 +127,8 @@ function populateTable(sites, userPos) {
                 <tbody>
                     ${exposuresHTML.join("")}
                 </tbody>
-            </table>`;
+            </table>
+        </div>`;
 
         if (site.streetAddress) {
             let address = site.streetAddress;
@@ -253,7 +257,7 @@ function prettyTime(ms) {
 const minsToMs = mins => mins * 60000;
 
 function getCachedSites() {
-    const maxAgeMins = 45; // maximum cached sites age
+    const maxAgeMins = 65; // maximum cached sites age
 
     const timeNow = Date.now();
     const sitesVal = window.localStorage.getItem("sitesVal");
