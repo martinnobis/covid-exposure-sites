@@ -370,8 +370,8 @@ async function getSites() {
 }
 
 // PROD: flip (prod uses australia-southeast1)
-exports.sites = functions.https.onCall(async(data, context) => {
-    // exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
+// exports.sites = functions.https.onCall(async(data, context) => {
+exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
 
     // context.app will be undefined if the request doesn't include a valid app Check token.
     // from: https://firebase.google.com/docs/app-check/cloud-functions?authuser=0
