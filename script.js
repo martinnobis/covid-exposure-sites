@@ -645,20 +645,21 @@ let gSites = getSites()
 
 // Set up back to top button
 
-let backToTopBtn = document.getElementById("backToTopBtn");
+// let backToTopBtn = document.getElementById("backToTopBtn");
+
 
 // When the user scrolls down some amount of px from the top of the document, show the button
-window.onscroll = () => {
-    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
-        // TODO: add it to the DOM instead of just making it appear
-        backToTopBtn.classList.add("load");
-    } else {
-        backToTopBtn.classList.remove("load");
-    }
-};
+// window.onscroll = () => {
+// if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+// TODO: add it to the DOM instead of just making it appear
+// backToTopBtn.classList.add("load");
+//  } else {
+// backToTopBtn.classList.remove("load");
+// }
+// };
 
 // When the user clicks on the button scroll to the top of the document
-backToTopBtn.addEventListener("click", () => {
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
-});
+// backToTopBtn.addEventListener("click", () => {
+//     document.body.scrollTop = 0;
+//     document.documentElement.scrollTop = 0;
+// });
