@@ -18,12 +18,12 @@
 
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
     <!-- PROD: flip -->
-    <link rel="stylesheet" href="style.min.css">
-    <!-- <link rel="stylesheet" href="style.css"> -->
+    <!-- <link rel="stylesheet" href="style.min.css"> -->
+    <link rel="stylesheet" href="style.css">
 
     <!-- PROD: switch (first is dev)-->
-    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script> -->
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO_F5kQ-eVc8KKMoHDMKMG6VgEd-h_lOM&libraries=places"></script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script>
+    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO_F5kQ-eVc8KKMoHDMKMG6VgEd-h_lOM&libraries=places"></script> -->
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1YFWXV08HE"></script>
@@ -106,8 +106,36 @@
             </div>
 
             <p class="pt-2" id="numSites"></p>
-            <p id="numExposures"></p>
-            <p id="lastUpdated"></p>
+            <p class="pt-1" id="numExposures"></p>
+            <p class="pt-1" id="lastUpdated"></p>
+
+            <details class="py-2">
+                <summary>Legend</summary>
+
+                <div class="container">
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-danger">Tier 1</span></div>
+                        <div class="col">Isolate for 14 days</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-warning">Tier 2</span></div>
+                        <div class="col">Isolate until negative</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-secondary">Tier 3</span></div>
+                        <div class="col">Monitor symptoms</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-success">New</span></div>
+                        <div class="col">This site had an exposure added in the last 48 hours</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-primary">5+ exposures</span></div>
+                        <div class="col">This site has 5 or more exposures</div>
+                    </div>
+                </div>
+            </details>
+
             <p id="showingSites"></p>
 
         </div>
@@ -325,21 +353,21 @@
 <script src="/__/firebase/8.10.0/firebase-app.js"></script>
 
 <!-- PROD: comment out this line -->
-<!-- <script>
+<script>
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-</script> -->
+</script>
 
 <script src="/__/firebase/8.10.0/firebase-app-check.js"></script>
 <script src="/__/firebase/8.10.0/firebase-functions.js"></script>
 
 <!-- PROD: Remove useEmulator -->
-<!-- <script src="/__/firebase/init.js?useEmulator=true"></script> -->
-<script src="/__/firebase/init.js"></script>
+<script src="/__/firebase/init.js?useEmulator=true"></script>
+<!-- <script src="/__/firebase/init.js"></script> -->
 
 <script src="bootstrap/bootstrap.bundle.min.js"></script>
 
 <!-- PROD: use minified -->
-<script src="script.min.js"></script>
-<!-- <script src="script.js"></script> -->
+<!-- <script src="script.min.js"></script> -->
+<script src="script.js"></script>
 
 </html>

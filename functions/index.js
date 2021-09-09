@@ -14,8 +14,6 @@ const metadataCollectionRef = admin.firestore().collection("metadata");
 const blueSitesCollectionRef = admin.firestore().collection("blueSites");
 const greenSitesCollectionRef = admin.firestore().collection("greenSites");
 
-const dateFormat = new Intl.DateTimeFormat('en-AU', { weekday: "short", year: "2-digit", month: "numeric", day: 'numeric' });
-
 const PAGE_SIZE = 100;
 
 function getGeocodeUrl(address) {
@@ -62,10 +60,9 @@ function parseRawSite(site) {
             postcode: site.Site_postcode,
             suburb: site.Suburb,
             exposures: [{
-                // TODO: format date and time the same way as dateAdded
-                date: site.Exposure_date,
+                dateDtm: site.Exposure_date_dtm,
                 time: site.Exposure_time,
-                dateAdded: dateFormat.format(Date.parse(site.Added_date_dtm)).replace(",", ""),
+                dateAddedDtm: site.Added_date_dtm,
                 tier: tier,
                 notes: site.Notes,
             }],
@@ -370,8 +367,8 @@ async function getSites() {
 }
 
 // PROD: flip (prod uses australia-southeast1)
-// exports.sites = functions.https.onCall(async(data, context) => {
-exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
+exports.sites = functions.https.onCall(async(data, context) => {
+    // exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
 
     // context.app will be undefined if the request doesn't include a valid app Check token.
     // from: https://firebase.google.com/docs/app-check/cloud-functions?authuser=0
