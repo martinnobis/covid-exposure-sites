@@ -101,8 +101,36 @@
             </div>
 
             <p class="pt-2" id="numSites"></p>
-            <p id="numExposures"></p>
-            <p id="lastUpdated"></p>
+            <p class="pt-1" id="numExposures"></p>
+            <p class="pt-1" id="lastUpdated"></p>
+
+            <details class="py-2">
+                <summary>Legend</summary>
+
+                <div class="container">
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-danger">Tier 1</span></div>
+                        <div class="col">Isolate for 14 days</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-warning">Tier 2</span></div>
+                        <div class="col">Isolate until negative</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-secondary">Tier 3</span></div>
+                        <div class="col">Monitor symptoms</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-success">New</span></div>
+                        <div class="col">This site had an exposure added in the last 48 hours</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-primary">5+ exposures</span></div>
+                        <div class="col">This site has 5 or more exposures</div>
+                    </div>
+                </div>
+            </details>
+
             <p id="showingSites"></p>
 
         </div>
@@ -292,11 +320,11 @@
 
     <!-- Back to top button -->
 
-    <a id="backToTopBtn" href="#" class="btn btn-light border btn-lg shadow-sm" role="button">
+    <!-- <a id="backToTopBtn" href="#" class="btn btn-light border btn-lg shadow-sm" role="button">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-up" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
           </svg>
-    </a>
+    </a> -->
 
     <!-- Footer -->
 
@@ -310,6 +338,9 @@
             <p class="text-center text-muted">© 2021 Martin Nobis</p>
         </footer>
     </div>
+
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Martinnobis" data-description="Support me on Buy me a coffee!" data-message="Thanks for visiting! If you find this site useful then please consider a donation to help support it."
+        data-color="#5F7FFF" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 
 </body>
 

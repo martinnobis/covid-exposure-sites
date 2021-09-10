@@ -38,6 +38,9 @@ connectFunctionsEmulator(functions, "localhost", 5001);
 // let functions = firebase.app().functions("australia-southeast1")
 // let functions = firebase.app().functions()
 
+const today = new Date();
+const msInDay = 24 * 60 * 60 * 1000;
+
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
     let R = 6370.139; // (km) at lat = -37.81895485084791
@@ -86,6 +89,13 @@ function getMaxTier(site) {
 function populateTable(sites, userPos) {
     let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
 
+    const dateFormat = new Intl.DateTimeFormat('en-AU', {
+        weekday: "short",
+        year: "2-digit",
+        month: "numeric",
+        day: 'numeric'
+    });
+
     table.innerHTML = ""; // clear table
 
     sites.forEach((site, index) => {
@@ -120,7 +130,7 @@ function populateTable(sites, userPos) {
         })
 
         const tier = getMaxTier(site);
-        let tierBadge = undefined;
+        let tierBadge = "";
         if (tier === 1) {
             tierBadge = `<span class="badge bg-danger">Tier ${tier}</span>`;
         } else if (tier === 2) {
@@ -134,17 +144,32 @@ function populateTable(sites, userPos) {
             numExposuresBadge = `<span class="badge bg-primary">5+ exposures</span>`;
         }
 
-        let cell = row.insertCell(1);
-
+        let newExposure = false;
         const exposuresHTML = site.exposures.map(exposure => {
+            const date = dateFormat.format(Date.parse(exposure.dateDtm)).replace(",", "");
+            const dateAdded = dateFormat.format(Date.parse(exposure.dateAddedDtm)).replace(",", "");
+
+            const dd = Date.parse(exposure.dateAddedDtm);
+            const diff = (+today - +dd) / msInDay
+            if (diff < 2) {
+                newExposure = true;
+            }
+
             return `
             <tr>
-                <td>${exposure.date} ${exposure.time}</td>
-                <td>${exposure.dateAdded}</td>
+                <td>${date} ${exposure.time}</td>
+                <td>${dateAdded}</td>
                 <td>${exposure.notes}</td>
             </tr>`;
         })
 
+        let newBadge = "";
+        if (newExposure) {
+            newBadge = `<span class="badge bg-success">New</span>`;
+        }
+
+        // collapse class has to be in it's own separate div without any 
+        // padding for the animation to work.
         const detail = `
         <div class="collapse" id="collapseSite${index}">
             <table class="table">
@@ -161,20 +186,24 @@ function populateTable(sites, userPos) {
             </table>
         </div>`;
 
+        let cell = row.insertCell(1);
         if (site.streetAddress) {
             let address = site.streetAddress;
             if (site.suburb) {
                 address = address.concat(`, ${site.suburb}`);
             }
             cell.innerHTML = `
-                <div data-bs-toggle="collapse" data-bs-target="#collapseSite${index}" aria-controls="collapseSite${index}" role="button">
-                    ${tierBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>${address} ${detail}
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
+                    ${tierBadge} ${newBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>
+                    ${address}
+                    ${detail}
                 </div>
             `;
         } else {
             cell.innerHTML =
                 `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">${tierBadge} ${numExposuresBadge}<div class="fw-bold">${site.title}</div>
+                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
+                    ${tierBadge} ${newBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>
                     ${detail}
                 </div>
             `;
@@ -288,7 +317,7 @@ function prettyTime(ms) {
 const minsToMs = mins => mins * 60000;
 
 function getCachedSites() {
-    const maxAgeMins = 45; // maximum cached sites age
+    const maxAgeMins = 65; // maximum cached sites age
 
     const timeNow = Date.now();
     const sitesVal = window.localStorage.getItem("sitesVal");
@@ -581,11 +610,19 @@ async function locBtnClicked() {
 
         // get all sites within 10km
         let filteredSites = sitesVal.sites.filter(site => site.dist_km < 10);
+        let numExposures = filteredSites.reduce((a, b) => { return a + b.exposures.length }, 0);
+
+        let showingSitesElement = document.getElementById("showingSites");
 
         if (filteredSites.length < 20) {
             // if there are less than 20 sites within 10km, show the closest 20 instead
             filteredSites = sitesVal.sites.slice(0, 20);
+            numExposures = filteredSites.reduce((a, b) => { return a + b.exposures.length }, 0);
+            showingSitesElement.innerHTML = `Showing the closest <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures`;
+        } else {
+            showingSitesElement.innerHTML = `Showing <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures within 10km`;
         }
+
         populateTable(filteredSites, pos);
     });
 }
@@ -614,13 +651,11 @@ let gRecentAddressLng;
 
 let gSites = getSites()
     .then(sitesVal => {
-        document.getElementById("numSites").innerHTML = `Number of sites: ${sitesVal.sites.length}`;
+        document.getElementById("numSites").innerHTML = `<span class="fs-5">${sitesVal.sites.length}</span> total sites`;
         document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
 
-        const numExposures = sitesVal.sites.reduce((a, b) => {
-            return a + b.exposures.length;
-        }, 0);
-        document.getElementById("numExposures").innerHTML = `Number of exposures: ${numExposures}`;
+        const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
+        document.getElementById("numExposures").innerHTML = `<span class="fs-5">${numExposures}</span> total exposures`;
 
         let slicedSites = sitesVal.sites.slice(0, 20); // just show 20
         populateTable(slicedSites, null); // populate with ???
@@ -630,20 +665,21 @@ let gSites = getSites()
 
 // Set up back to top button
 
-let backToTopBtn = document.getElementById("backToTopBtn");
+// let backToTopBtn = document.getElementById("backToTopBtn");
+
 
 // When the user scrolls down some amount of px from the top of the document, show the button
-window.onscroll = () => {
-    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
-        // TODO: add it to the DOM instead of just making it appear
-        backToTopBtn.classList.add("load");
-    } else {
-        backToTopBtn.classList.remove("load");
-    }
-};
+// window.onscroll = () => {
+// if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+// TODO: add it to the DOM instead of just making it appear
+// backToTopBtn.classList.add("load");
+//  } else {
+// backToTopBtn.classList.remove("load");
+// }
+// };
 
 // When the user clicks on the button scroll to the top of the document
-backToTopBtn.addEventListener("click", () => {
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
-});
+// backToTopBtn.addEventListener("click", () => {
+//     document.body.scrollTop = 0;
+//     document.documentElement.scrollTop = 0;
+// });
