@@ -13,5 +13,4 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 require('../css/style.css');
 
 // Javascript
-window.bootstrap = require('bootstrap');
 require('./index.js');

@@ -85,12 +85,10 @@ firebase deploy --only "functions:getSites"
 
 ### Hosting
 
-
 ```bash
 npm run deploy
 firebase deploy --only hosting
 ```
-
 
 ### Pub/Sub emulator
 
@@ -141,3 +139,9 @@ This will work with the emulator, but it needs more work (documentation: https:/
 2. Go to localhost and grab the debug token from the console log, keep it secret. I put mine in .env for safekeeping.
 3. Add the debug token in the App check menu in the Firebase console > Project settings menu.
 4. That's it, no need to change the actual call to the Functions endpoint.
+
+### Webpack
+
+```bash
+npm run build; ./deploy-dev-frontend.sh
+```

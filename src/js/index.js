@@ -3,6 +3,8 @@ import { initializeApp } from "firebase/app";
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 const { initializeAppCheck, ReCaptchaV3Provider } = require("firebase/app-check");
 
+import { Toast } from 'bootstrap';
+
 // bootstrap is imported in entry point
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -349,12 +351,12 @@ async function getSites() {
     }
 }
 
-const posToast = new bootstrap.Toast(document.getElementById("posToast"), { autohide: false });
-const sitesToast = new bootstrap.Toast(document.getElementById("sitesToast"), { autohide: false });
+const posToast = new Toast(document.getElementById("posToast"), { autohide: false });
+const sitesToast = new Toast(document.getElementById("sitesToast"), { autohide: false });
 
-const posPermissionDeniedToast = new bootstrap.Toast(document.getElementById("posPermissionDeniedToast"), { autohide: false });
-const posUnavailableToast = new bootstrap.Toast(document.getElementById("posUnavailableToast"), { autohide: false });
-const posTimeoutToast = new bootstrap.Toast(document.getElementById("posTimeoutToast"), { autohide: false });
+const posPermissionDeniedToast = new Toast(document.getElementById("posPermissionDeniedToast"), { autohide: false });
+const posUnavailableToast = new Toast(document.getElementById("posUnavailableToast"), { autohide: false });
+const posTimeoutToast = new Toast(document.getElementById("posTimeoutToast"), { autohide: false });
 
 const useLocationBtn = document.getElementById("useLocationBtn");
 const useAddressBtn = document.getElementById("useAddressBtn");
