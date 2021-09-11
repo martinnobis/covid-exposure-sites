@@ -33,10 +33,12 @@ const appCheck = initializeAppCheck(app, {
     isTokenAutoRefreshEnabled: true
 });
 
-const functions = getFunctions(app);
+// PROD: flip lines below
+const functions = getFunctions(app, "australia-southeast1");
+// const functions = getFunctions(app);
 
 // PROD: comment out line
-connectFunctionsEmulator(functions, "localhost", 5001);
+// connectFunctionsEmulator(functions, "localhost", 5001);
 
 const today = new Date();
 const msInDay = 24 * 60 * 60 * 1000;
