@@ -8,13 +8,12 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         filename: 'index.bundle.js'
     },
-    // Optional and for development only. This provides the ability to
-    // map the built code back to the original source format when debugging.
-    devtool: 'eval-source-map',
     module: {
-        rules: [{
-            test: /\.css$/,
-            use: ['style-loader', 'css-loader'],
-        }, ],
+      rules: [
+        {
+          test: /\.css$/,
+          use: ['style-loader', 'css-loader'],
+        },
+      ],
     },
 };

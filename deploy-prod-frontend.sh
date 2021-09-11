@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # uglifyjs script.js -m toplevel -c -o public/script.min.js -c drop_console
-cp -r dist/ public/
+cp dist/index.bundle.js dist/main.css public/
 
 html-minifier \
     --collapse-whitespace \
@@ -13,7 +13,7 @@ html-minifier \
     --use-short-doctype \
     --minify-css true \
     --minify-js true \
-    index.html -o public/index.html
+    src/index.html -o public/index.html
 
 html-minifier \
     --collapse-whitespace \
@@ -25,7 +25,7 @@ html-minifier \
     --use-short-doctype \
     --minify-css true \
     --minify-js true \
-    privacypolicy.html -o public/privacypolicy.html
+    src/privacypolicy.html -o public/privacypolicy.html
 
 html-minifier \
     --collapse-whitespace \
@@ -37,7 +37,7 @@ html-minifier \
     --use-short-doctype \
     --minify-css true \
     --minify-js true \
-    acceptableuse.html -o public/acceptableuse.html
+    src/acceptableuse.html -o public/acceptableuse.html
 
 # cssnano < style.css > public/style.min.css
 

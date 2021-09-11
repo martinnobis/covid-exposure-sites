@@ -1,4 +1,4 @@
 #!/bin/sh
 
-cp index.html privacypolicy.html acceptableuse.html public
-cp dist/index.bundle.js public
+cp src/index.html src/privacypolicy.html src/acceptableuse.html public
+cp dist/index.bundle.js dist/main.css public

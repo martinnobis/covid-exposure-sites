@@ -22,6 +22,7 @@
 - [x] Improve front end lifecyle and error handling
 - [x] Populate rows with all site data
 - [ ] Clean raw exposure site data
+- [ ] Fix privacy policy October 2020 wording
 - [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
 - [x] Style website
 - [x] Handle not getting user pos; 1. timeout (increase timeout or ask user to reload page) 2. ask user to give permission if denied.

@@ -34,11 +34,9 @@ const appCheck = initializeAppCheck(app, {
 });
 
 const functions = getFunctions(app);
-connectFunctionsEmulator(functions, "localhost", 5001);
 
-// PROD: Flip lines below
-// let functions = firebase.app().functions("australia-southeast1")
-// let functions = firebase.app().functions()
+// PROD: comment out line
+connectFunctionsEmulator(functions, "localhost", 5001);
 
 const today = new Date();
 const msInDay = 24 * 60 * 60 * 1000;
@@ -170,7 +168,7 @@ function populateTable(sites, userPos) {
             newBadge = `<span class="badge bg-success">New</span>`;
         }
 
-        // collapse class has to be in it's own separate div without any 
+        // collapse class has to be in it's own separate div without any
         // padding for the animation to work.
         const detail = `
         <div class="collapse" id="collapseSite${index}">
@@ -213,22 +211,6 @@ function populateTable(sites, userPos) {
     })
 }
 
-function convertToDms(dd, isLng) {
-    const direction = dd < 0 ?
-        isLng ? 'W' : 'S' :
-        isLng ? 'E' : 'N';
-
-    const absDd = Math.abs(dd);
-    const deg = absDd | 0;
-    const frac = absDd - deg;
-    const min = (frac * 60) | 0;
-    let sec = frac * 3600 - min * 60;
-    // Round it to 2 decimal points.
-    sec = Math.round(sec * 100) / 100;
-
-    return `${deg}° ${min}' ${sec}" ${direction}`;
-}
-
 function cacheUserPosition(pos) {
     window.localStorage.setItem("lat", pos.lat)
     window.localStorage.setItem("lng", pos.lng)
@@ -261,7 +243,6 @@ async function getUserPosition() {
     // doesn't seem to work every time. So this function will store the user's
     // position in localStorage and manage when to update it.
     if (!userPosLastUpdated || parseInt(userPosLastUpdated) < +timeNow - minsToMs(maxAgeMins)) {
-        console.log("getting new user position");
 
         const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: minsToMs(maxAgeMins) }
         return new Promise((success, failure) => {
@@ -540,7 +521,6 @@ function cacheAddress(address, lat, lng) {
         temp.push({ address: address, lat: lat, lng: lng });
         window.localStorage.setItem("recentAddresses", JSON.stringify(temp));
     }
-    console.log(`cached address: ${address}`);
 }
 
 function deCacheAddress(address) {
@@ -550,7 +530,6 @@ function deCacheAddress(address) {
         const addresses = JSON.parse(addressesStr);
         const filteredAddresses = addresses.filter(a => a.address !== address);
         window.localStorage.setItem("recentAddresses", JSON.stringify(filteredAddresses));
-        console.log(`decached address: ${address}`);
     }
 }
 
