@@ -8,9 +8,7 @@
 // import -> ES6
 
 
-// CSS
-import 'bootstrap/dist/css/bootstrap.min.css';
-require('../css/style.css');
 
 // Javascript
-require('./index.js');
+// require('./vic.js');
+// require('./nsw.js');
