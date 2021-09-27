@@ -2,6 +2,8 @@
 
 ## TODO
 
+### Done
+
 - [x] Collapse sites with multiple exposure events
 - [x] Get exposure sites from VIC endpoint and handle pagination
 - [x] Cache exposure sites in localStorage
@@ -17,13 +19,9 @@
 - [x] Frontend: Get site from paginated getSites endpoint
 - [x] Add Bootstrap
 - [x] Add Google Analytics
-- [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
 - [x] Add 'site under development' banner
 - [x] Improve front end lifecyle and error handling
 - [x] Populate rows with all site data
-- [ ] Clean raw exposure site data
-- [ ] Fix privacy policy October 2020 wording
-- [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
 - [x] Style website
 - [x] Handle not getting user pos; 1. timeout (increase timeout or ask user to reload page) 2. ask user to give permission if denied.
 - [x] Privacy policy
@@ -34,23 +32,34 @@
 - [x] Use separate keys for development/debugging and production (done: only needed frontend autocomplete address)
 - [x] Security: restrict calls to my getSites API endpoint to only those coming from the frontend, requires onCall?
 - [x] Give scroll up button a shadow
-- [ ] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
-- [ ] Add and remove the back to top button to the DOM instead of just hiding it
-- [ ] Add disclaimer about not all sites appearing
 - [x] Favicon
 - [x] Add quota to throttle address autocomplete calls per user per minute
-- [ ] Site title/description
-- [ ] Check SEO
 - [x] Develop release build process:
 - [x] Release: js minifier
 - [x] Release: Remove console logs
-- [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
-- [ ] Handle flights
-- [ ] Handle public transport (tram route titles are really long)
+- [x] Add disclaimer
+- [x] Site title/description
+- [x] Check SEO
 - [x] Add ability to change position by entering an address using the Google autocomplete address widget (see commented out code)
-- [ ] Don't display VICs address for site, but use the one fetched from Google API (it'd be more consistent)
+- [x] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again.
+- [x] Add extra badges for new sites (need Added_time_dtm for that!) and # of exposures
+
+### General
+- [ ] Handle flights
+- [ ] Fix privacy policy October 2020 wording
+- [ ] Handle public transport (tram route titles are really long)
+- [ ] Send myself an email for backend updateAllSites() failures with Sendgrid https://firebase.google.com/docs/functions/tips#use_sendgrid_to_send_emails
 - [ ] Add hyperlink to address to open Google Maps to location
-- [ ] Handle not finding site position gracefully and inform user, currently these aren't written to Firestore at all!
+- [ ] Don't display VICs/NSWs address for site, but use the one fetched from Google API (it'd be more consistent)
+- [ ] Handle not finding site position gracefully and inform user, log onto firestore and update manually?
+
+### NSW
+- [ ] Do backend
+- [ ] Create table in frontend, copy most of it from VIC
+
+### Victoria
+- [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
+- [ ] Clean raw exposure site data some more
 
 ## Development
 
