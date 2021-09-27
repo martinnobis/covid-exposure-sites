@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
-import { functions, httpsCallable } from './common.js'
+// import { functions, httpsCallable } from './common.js'
+import * as common from './common.js'
 
 import { Toast } from 'bootstrap';
 
@@ -243,7 +244,8 @@ async function getUserPosition() {
     }
 }
 
-const sitesEndpoint = httpsCallable(functions, "sites");
+// TODO: could use currying here to not have to import both functions and httpsCallable
+const sitesEndpoint = common.httpsCallable(common.functions, "sites");
 
 async function fetchSites() {
     return sitesEndpoint({ state: "vic" })

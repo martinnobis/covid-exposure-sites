@@ -1,4 +1,3 @@
 #!/bin/sh
 
-cp src/index.html src/privacypolicy.html src/acceptableuse.html src/nsw.html public
-cp dist/index.bundle.js dist/main.css public
+cp dist/index.bundle.js dist/vic.bundle.js dist/nsw.bundle.js dist/index.html dist/vic.html dist/nsw.html public

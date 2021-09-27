@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Covid-19 exposure sites near me</title>
+
+    <meta name="description" content="View Covid-19 exposure sites sorted by distance from your location or select an address.">
+
+    <!-- Favicon from: https://favicon.io/emoji-favicons/house -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <!-- Makes the 'google' property available in your js code -->
+    <!-- PROD: switch (first is dev)-->
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-WGD6ZgOz_ifhadv6jktYS8tIXKs19o8&libraries=places"></script>
+    <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBO_F5kQ-eVc8KKMoHDMKMG6VgEd-h_lOM&libraries=places"></script> -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1YFWXV08HE"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'G-1YFWXV08HE');
+    </script>
+</head>
+
+<body>
+
+    <!-- Templates -->
+
+    <template id="recentAddressTemplate">
+        <div class="d-flex align-items-center my-1">
+            <button type="button" style="text-align: left; font-size: .90em;" class="btn btn-light flex-grow-1 ms-1"></button>
+            <button type="button" class="btn-close ms-1" aria-label="Close"></button>
+        </div>
+    </template>
+
+    <div class="bg-light px-2">
+        <div class="container-md">
+
+            <h1 class="display-5 fw-bold">Covid-19 exposure sites near me</h1>
+            <p class="col-md-8 fs-4 fst-italic text-muted">Victoria only</p>
+
+            <div class="row g-3 mt-3">
+
+                <div class="col-sm">
+                    <!-- Use my location -->
+                    <button id="useLocationBtn" type="button" class="btn btn-white justify-content-center align-items-center border border-dark col p-3 opacity-50">
+                            <h5 class="text-nowrap">
+                                <svg id="bi-geo-alt" xmlns="http://www.w3.org/2000/svg" width="32" height="32" class="bi bi-geo-alt" viewBox="0 0 16 16">
+                                    <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z"/>
+                                    <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                </svg>
+                                Use my location
+                            </h5>
+                        <div id="userAddress" class="fst-italic"></div>
+                        </button>
+                </div>
+
+                <div class="col-sm">
+                    <!-- Use an address -->
+                    <button id="useAddressBtn" type="button" class="btn btn-white border border-dark col p-3 opacity-50">
+                            <h5 class="text-nowrap">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="bi bi-house" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M2 13.5V7h1v6.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V7h1v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5zm11-11V6l-2-2V2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5z"/>
+                                    <path fill-rule="evenodd" d="M7.293 1.5a1 1 0 0 1 1.414 0l6.647 6.646a.5.5 0 0 1-.708.708L8 2.207 1.354 8.854a.5.5 0 1 1-.708-.708L7.293 1.5z"/>
+                                </svg>
+                            Use an address
+                            </h5>
+                            <input style="width: 100%" id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
+
+                    </button>
+                </div>
+
+                <div class="col-sm">
+                    <!-- Recent addresses -->
+                    <div id="useRecentAddress" class="bg-white border rounded border-dark col pt-3 pb-2 px-2 opacity-50">
+
+                        <h5 class="text-nowrap">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="bi bi-clock" viewBox="0 0 16 16">
+                                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+                            </svg> Use recent address
+                        </h5>
+
+                        <div id="recentAddresses" style="max-height: 120px;" class="overflow-auto">
+                            <!-- recentAddress instances go here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="pt-2" id="numSites"></p>
+            <p class="pt-1" id="numExposures"></p>
+            <p class="pt-1" id="lastUpdated"></p>
+
+            <details class="py-2">
+                <summary>Legend</summary>
+
+                <div class="container">
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-danger">Tier 1</span></div>
+                        <div class="col">Isolate for 14 days</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-warning">Tier 2</span></div>
+                        <div class="col">Isolate until negative</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-secondary">Tier 3</span></div>
+                        <div class="col">Monitor symptoms</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-success">New</span></div>
+                        <div class="col">This site had an exposure added in the last 48 hours</div>
+                    </div>
+                    <div class="row">
+                        <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-primary">5+ exposures</span></div>
+                        <div class="col">This site has 5 or more exposures</div>
+                    </div>
+                </div>
+            </details>
+
+            <p id="showingSites"></p>
+
+        </div>
+    </div>
+
+    <!-- light wave -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 220"><path fill="#f8f9fa" fill-opacity="1" d="M0,128L48,122.7C96,117,192,107,288,112C384,117,480,139,576,154.7C672,171,768,181,864,154.7C960,128,1056,64,1152,64C1248,64,1344,128,1392,160L1440,192L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path></svg>
+
+
+    <!-- <div class="dropdown">
+        <button class="btn btn-light border border-dark dropdown-toggle" type="button" id="dropdownMenu2" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+            Options
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
+            <div class="px-4 py-3">
+                <div class="mb-3">
+                    <label style="margin-right: 20px;">Show sites within 1km only</label>
+                    <input type="range" class="form-range" min="1" max="100" step="1" id="customRange3">
+                    <hr class="dropdown-divider">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="showPublicTransportSwitch">
+                        <label class="form-check-label" for="showPublicTransportSwitch">Show public transport</label>
+                    </div>
+                    <hr class="dropdown-divider">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="showFlightsSwitch">
+                        <label class="form-check-label" for="showFlightsSwitch">Show flights</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Table -->
+
+    <div class="container-md">
+        <table id="sites" class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Site</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"> </tbody>
+        </table>
+    </div>
+
+
+    <!-- Geolocation error toasts -->
+
+    <div id="posPermissionDeniedToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">
+                        <svg id="danger-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi-exclamation-triangle" viewBox="0 0 16 16">
+                            <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z"></path>
+                            <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z"></path>
+                          </svg>
+                        Location access denied
+                    </strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Please allow location access to sort sites by distance from you.
+        </div>
+    </div>
+
+    <div id="posUnavailableToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi-exclamation-triangle" viewBox="0 0 16 16">
+                            <use href="#danger-icon"/>
+                        </svg>
+                        Could not get your position
+                    </strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Please refresh the page to try again.
+        </div>
+    </div>
+
+    <div id="posTimeoutToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi-exclamation-triangle" viewBox="0 0 16 16">
+                            <use href="#danger-icon"/>
+                        </svg>
+                        Page timed out getting your position
+                    </strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Please refresh the page to try again.
+        </div>
+    </div>
+
+
+
+    <!-- Blue wave -->
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#5481b5" fill-opacity="1" d="M0,192L48,165.3C96,139,192,85,288,85.3C384,85,480,139,576,154.7C672,171,768,149,864,128C960,107,1056,85,1152,90.7C1248,96,1344,128,1392,144L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+
+    <!-- Blue section -->
+
+    <section style="background: #5481b5; color: white">
+        <div class="container px-4 pb-5" id="featured-3">
+            <div class="row g-4 pb-5 row-cols-1 row-cols-md-3">
+
+                <div class="feature col">
+                    <div class="feature-icon bg-primary bg-gradient">
+                        <svg class="bi" width="1em" height="1em"><use xlink:href="#bi-geo-alt"></use></svg>
+                    </div>
+                    <h2>Your location is private</h2>
+                    <p>You can use your location to sort exposure sites by distance from you. It's not shared with us and all distance calculations are done in your browser.</p>
+                </div>
+
+                <div class="feature col">
+                    <div class="feature-icon bg-primary bg-gradient">
+
+                        <svg class="bi" width="1em" height="1em"><use xlink:href="#tools-cross">
+
+                    <svg id="tools-cross" viewBox="0 0 16 16">
+                        <path d="M1 0 0 1l2.2 3.081a1 1 0 0 0 .815.419h.07a1 1 0 0 1 .708.293l2.675 2.675-2.617 2.654A3.003 3.003 0 0 0 0 13a3 3 0 1 0 5.878-.851l2.654-2.617.968.968-.305.914a1 1 0 0 0 .242 1.023l3.356 3.356a1 1 0 0 0 1.414 0l1.586-1.586a1 1 0 0 0 0-1.414l-3.356-3.356a1 1 0 0 0-1.023-.242L10.5 9.5l-.96-.96 2.68-2.643A3.005 3.005 0 0 0 16 3c0-.269-.035-.53-.102-.777l-2.14 2.141L12 4l-.364-1.757L13.777.102a3 3 0 0 0-3.675 3.68L7.462 6.46 4.793 3.793a1 1 0 0 1-.293-.707v-.071a1 1 0 0 0-.419-.814L1 0zm9.646 10.646a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708zM3 11l.471.242.529.026.287.445.445.287.026.529L5 13l-.242.471-.026.529-.445.287-.287.445-.529.026L3 15l-.471-.242L2 14.732l-.287-.445L1.268 14l-.026-.529L1 13l.242-.471.026-.529.445-.287.287-.445.529-.026L3 11z"/>
+    </svg>
+                        </svg>
+                    </div>
+                    <h2>Find any issues?</h2>
+                    <p>Data from the Victorian Department of Health isn't perfect, please report anything that looks strange. Come back often to see new features and please contact us with any suggestions, comments or queries!</p>
+                    <a style="color: white;" href="mailto: covidexposuresites@gmail.com" class="icon-link">Email us</a>
+                </div>
+
+                <div class="feature col">
+                    <div class="feature-icon bg-primary bg-gradient">
+                        <svg class="bi" width="1em" height="1em"><use xlink:href="#people-circle">
+
+
+    <svg id="people-circle" viewBox="0 0 16 16">
+        <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"></path>
+        <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"></path>
+    </svg>
+
+
+                        </use>
+                        </svg>
+                    </div>
+                    <h2>Share this page!</h2>
+                    <p>If you think your friends and family will find this page useful then please spread the word and share this page on your favourite social media platform.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Loading toasts -->
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="sitesToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-body">
+                <div class="spinner-border text-primary mr-5" style="width: 1em; height: 1em;" role="status">
+                    <span class="visually-hidden">Downloading sites...</span>
+                </div>
+                Downloading sites...
+            </div>
+        </div>
+
+        <div id="posToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-body">
+                <div class="spinner-border text-primary mr-5" style="width: 1em; height: 1em;" role="status">
+                    <span class="visually-hidden">Getting your position...</span>
+                </div>
+                Getting your position...
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to top button -->
+
+    <!-- <a id="backToTopBtn" href="#" class="btn btn-light border btn-lg shadow-sm" role="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-up" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/>
+          </svg>
+    </a> -->
+
+
+    <!-- Disclaimer -->
+
+    <p class="text-muted p-5">
+        <small>
+            Disclaimer: This website is unofficial but uses open data from official sources. The information on this website should be treated as a guide only and may not always be up to date. All efforts are made to keep this site up to date and accurate but it is not guaranteed. In addition to using this website we recommend that you review official sources of covid exposure site information. You should not rely solely on the information on this website.
+        </small>
+    </p>
+
+    <!-- Footer -->
+
+    <div class="container">
+        <footer class="py-3 my-5">
+            <ul class="nav justify-content-center align-items-center border-bottom pb-3 mb-3">
+                <li class="nav-item"><a href="/" class="nav-link px-2 text-muted">Home</a></li>
+                <li class="nav-item"><a href="privacypolicy.html" class="nav-link px-2 text-muted">Privacy Policy</a></li>
+                <li class="nav-item"><a href="acceptableuse.html" class="nav-link px-2 text-muted">Acceptable Use</a></li>
+            </ul>
+            <p class="text-center text-muted">© 2021 Martin Nobis</p>
+        </footer>
+    </div>
+
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="Martinnobis" data-description="Support me on Buy me a coffee!" data-message="Thanks for visiting! If you find this site useful then please consider a donation to help support it."
+        data-color="#5F7FFF" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+
+</body>
+
+<!-- PROD: comment out line, required for dev -->
+<script>
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+</script>
+
+</html>

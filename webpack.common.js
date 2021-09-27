@@ -1,25 +1,33 @@
 // All this css stuff is to create a separate file that bundles all the css
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 
-const pages = ["nsw.html", "index.html"];
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
+const pages = ["index", "vic", "nsw"];
 
 module.exports = {
     // The entry point file described above
-    entry: { vic: './src/js/vic.js', nsw: './src/js/nsw.js' },
-    plugins: [new MiniCssExtractPlugin()],
+    entry: pages.reduce((config, page) => {
+        config[page] = `./src/js/${page}.js`;
+        return config;
+    }, {}),
+    // plugins: [new BundleAnalyzerPlugin()].concat(
+    plugins: [].concat(
+        pages.map(
+            page =>
+            new HtmlWebpackPlugin({
+                inject: true,
+                template: `./src/${page}.html`,
+                filename: `${page}.html`,
+                chunks: [page],
+            })
+        )),
     module: {
         rules: [{
             test: /\.css$/,
-            use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"],
+            use: ["style-loader", "css-loader"],
         }, ],
-    },
-    optimization: {
-        minimize: true,
-        minimizer: [
-            // For webpack@5 you can use the `...` syntax to extend existing minimizers (i.e. `terser-webpack-plugin`), uncomment the next line
-            '...',
-            new CssMinimizerPlugin(),
-        ],
     },
 };

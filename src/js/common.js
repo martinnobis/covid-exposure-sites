@@ -20,8 +20,9 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let functions;
-if (firebase.apps.length === 0) {
-    const app = initializeApp(firebaseConfig);
+let app;
+if (!app) {
+    app = initializeApp(firebaseConfig);
 
     const appCheck = initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider('6LfG7DccAAAAAE6Jgk9hCoPB1egUCFVWuvUjGRxW'),
