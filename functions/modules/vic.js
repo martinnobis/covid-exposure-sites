@@ -1,19 +1,18 @@
 const utils = require('./utils')
 
+const functions = require('firebase-functions');
+
 require('dotenv').config()
 const fetch = require("node-fetch");
 
 const PAGE_SIZE = 100;
 
-const admin = require('firebase-admin');
-admin.initializeApp();
+const noLocationSitesCollectionRef = utils.admin.firestore().collection("noLocationSites");
+const coordsCollectionRef = utils.admin.firestore().collection("sites");
+const metadataCollectionRef = utils.admin.firestore().collection("metadata");
 
-const noLocationSitesCollectionRef = admin.firestore().collection("noLocationSites");
-const coordsCollectionRef = admin.firestore().collection("sites");
-const metadataCollectionRef = admin.firestore().collection("metadata");
-
-const blueSitesCollectionRef = admin.firestore().collection("blueSites");
-const greenSitesCollectionRef = admin.firestore().collection("greenSites");
+const blueSitesCollectionRef = utils.admin.firestore().collection("blueSites");
+const greenSitesCollectionRef = utils.admin.firestore().collection("greenSites");
 
 function getGeocodeUrl(address) {
     return `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&bounds=-34.21832861798514,140.97232382930986|-38.780983886239156,147.920293027031&components=country:AU&key=${process.env.GEOCODE_API_KEY}`
@@ -108,7 +107,7 @@ async function getSiteCoords(site) {
                         }
 
                         const coord = {
-                            location: new admin.firestore.GeoPoint(
+                            location: new utils.admin.firestore.GeoPoint(
                                 responseJson.results[0].geometry.location.lat,
                                 responseJson.results[0].geometry.location.lng,
                             )
@@ -304,7 +303,7 @@ async function updateSites() {
         const pageRef = coldCollectionRef.doc(`page${(counter+1) % numPages}`);
 
         // update is from: https://firebase.google.com/docs/firestore/manage-data/add-data#update_elements_in_an_array
-        pageRef.update({ sites: admin.firestore.FieldValue.arrayUnion(site) });
+        pageRef.update({ sites: utils.admin.firestore.FieldValue.arrayUnion(site) });
 
         counter += 1;
 

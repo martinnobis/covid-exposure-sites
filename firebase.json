@@ -6,8 +6,18 @@
             "firebase.json",
             "**/.*",
             "**/node_modules/**"
+        ],
+        "rewrites": [
+          {
+            "source": "/vic",
+            "destination": "/vic.html"
+          },
+          {
+            "source": "/nsw",
+            "destination": "/nsw.html"
+          }
         ]
-    },
+      },
     "functions": {
         "source": "functions"
     },

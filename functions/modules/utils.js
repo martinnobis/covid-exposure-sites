@@ -1,3 +1,9 @@
+let admin;
+if (!admin)  {
+  admin = require('firebase-admin');
+  admin.initializeApp();
+}
+
 function sleep(ms) {
     // usage: await sleep(2000); to sleep synchronously
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -37,4 +43,4 @@ async function deleteQueryBatch(db, query, resolve) {
     });
 }
 
-module.exports = { sleep, deleteCollection };
+module.exports = { sleep, deleteCollection, admin };
