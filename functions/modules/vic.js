@@ -299,6 +299,7 @@ async function updateSites() {
         // Not needed on the client side, save space and bandwidth this way
         delete site.hash;
         delete site.searchParam;
+        delete site.postcode;
 
         const pageRef = coldCollectionRef.doc(`page${(counter+1) % numPages}`);
 
