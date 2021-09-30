@@ -1,6 +1,7 @@
 // import * as Vic from './modules/vic.js';
 
 const Vic = require("./modules/vic")
+const Nsw = require("./modules/nsw")
 
 // import functions from 'firebase-functions';
 // const { region, https } = functions;
@@ -19,6 +20,10 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
     Vic.updateSites();
 })
 
+exports.updateNSWSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 720 minutes").onRun(async(context) => {
+    Nsw.updateSites();
+})
+
 exports.sites = functions.https.onCall(async(data, context) => {
     // exports.sites = functions.region("australia-southeast1").https.onCall(async(data, context) => {
 
@@ -33,7 +38,7 @@ exports.sites = functions.https.onCall(async(data, context) => {
     if (data.state === "vic") {
         return Vic.getSites();
     } else if (data.state === "nsw") {
-        return {};
+        return Nsw.getSites();
     } else {
         return { error: "Unrecognised state param" };
     }

@@ -52,6 +52,8 @@
 - [ ] Add hyperlink to address to open Google Maps to location
 - [ ] Don't display VICs/NSWs address for site, but use the one fetched from Google API (it'd be more consistent)
 - [ ] Handle not finding site position gracefully and inform user, log onto firestore and update manually?
+- [ ] Add exposure time (e.g. HH:MM:SS) as a hover to the exposure add date
+- [ ] Let users share a location (address) to others with a URL (put address and lat/lng in the params, e.g. /?address=4+melbourne+street&loc=-39.43242,144.34234324)
 
 ### NSW
 - [ ] Do backend

@@ -43,9 +43,10 @@ function getSearchParam(rawSite) {
 
 function parseRawSite(site) {
 
+    // Get the tier
     let tier = "N/A";
     if (site.Advice_title) {
-        // Some sites don't have this field!
+        // Tier is in this field, but some sites don't have this field!
         tier = /\d/.exec(site.Advice_title)[0]; // not global, so will stop at the first match
     }
 
@@ -63,7 +64,7 @@ function parseRawSite(site) {
                 dateAddedDtm: site.Added_date_dtm,
                 tier: tier,
                 notes: site.Notes,
-            }],
+            }]
         }
     } catch (error) {
         console.error(error, site);
@@ -251,12 +252,11 @@ async function updateSites() {
 
     let sites = await fetchSites(0, [])
         .catch(error => {
-            console.error("Could not fetch sites!", error);
+            console.error("Could not fetch VIC sites!", error);
         });
 
     if (sites === undefined || sites.length == 0) {
-        metadataCollectionRef.doc("lastUpdateSuccess").set({ time: +Date.now() });
-        console.log("No sites!");
+        console.log("No VIC sites!");
         return;
     }
 
