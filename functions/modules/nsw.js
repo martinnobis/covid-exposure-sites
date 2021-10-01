@@ -133,8 +133,8 @@ function parseRawSite(site) {
       title: site.Venue,
       streetAddress: site.Address,
       suburb: site.Suburb,
-      lat: site.Lat,
-      lng: site.Lon,
+      lat: parseFloat(site.Lat),
+      lng: parseFloat(site.Lon),
       exposures: [{
         date: date,
         time: site.Time,
