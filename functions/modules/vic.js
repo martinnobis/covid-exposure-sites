@@ -130,7 +130,7 @@ async function getSiteCoords(site) {
 }
 
 
-function samePlace(s1, s2) {
+function isSamePlace(s1, s2) {
     // Remove punctuation and whitespace to prevent duplicates from unclean VIC data
     if (s1.streetAddress && s2.streetAddress) {
         return s1.title.replace(/[^\w]/g, "") == s2.title.replace(/[^\w]/g, "") &&
@@ -140,44 +140,6 @@ function samePlace(s1, s2) {
     } else {
         return false;
     }
-}
-
-function isDuplicateSite(s1, s2) {
-    return JSON.stringify(s1) == JSON.stringify(s2);
-}
-
-function foldSites(sites) {
-    if (sites === undefined || sites.length == 0) {
-        return [];
-    }
-
-    let foldedSites = [sites[0]]; // add first one
-    for (s1 of sites) {
-        let folded = false
-        let duplicate = false
-
-        for (s2 of foldedSites) {
-            if (isDuplicateSite(s1, s2)) {
-                duplicate = true;
-                break;
-            }
-            if (samePlace(s1, s2) && !isDuplicateSite(s1, s2)) {
-                s2.exposures.push(...s1.exposures);
-                folded = true;
-                break;
-            }
-        }
-        if (duplicate) {
-            continue;
-        }
-        if (!folded) {
-            foldedSites.push(s1);
-        }
-    }
-
-    // TODO: sort exposure array by date and time of exposure
-
-    return foldedSites;
 }
 
 async function getColdCollectionStr() {
@@ -261,7 +223,7 @@ async function updateSites() {
     }
 
     sites = sites.map(s => parseRawSite(s));
-    sites = foldSites(sites);
+    sites = utils.foldSites(sites, isSamePlace);
 
     await utils.deleteCollection(noLocationSitesCollectionRef, 40);
 
@@ -308,7 +270,7 @@ async function updateSites() {
 
         counter += 1;
 
-        await utils.sleep(1100 / numPages); // time between editing the same document (page) becomes ~1s
+        await utils.sleep(1000 / numPages); // time between editing the same document (page) becomes ~1s
     }
 
     // Flip hot and cold collections refs

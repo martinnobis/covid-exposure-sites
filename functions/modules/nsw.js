@@ -82,7 +82,51 @@ async function getSites() {
     };
 }
 
+function shortenDay(text) {
+  text = text.replace("Monday", "Mon");
+  text = text.replace("Tuesday", "Tue");
+  text = text.replace("Wednesday", "Wed");
+  text = text.replace("Thursday", "Thu");
+  text = text.replace("Friday", "Fri");
+  text = text.replace("Saturday", "Sat");
+  text = text.replace("Sunday", "Sun");
+  return text
+}
+
+function shortenMonth(text) {
+  text = text.replace("January", "Jan");
+  text = text.replace("Febuary", "Feb");
+  text = text.replace("March", "Mar");
+  text = text.replace("April", "Apr");
+  text = text.replace("May", "May");
+  text = text.replace("June", "Jun");
+  text = text.replace("July", "Jul");
+  text = text.replace("August", "Aug");
+  text = text.replace("September", "Sep");
+  text = text.replace("October", "Oct");
+  text = text.replace("November", "Nov");
+  text = text.replace("December", "Dec");
+  return text
+}
+
+function shortenYear(text) {
+  text = text.replace("2021", "21");
+  text = text.replace("2022", "22");
+  text = text.replace("2023", "23");
+  text = text.replace("2024", "24");
+  text = text.replace("2025", "25");
+  return text
+}
+
 function parseRawSite(site) {
+
+  let date = shortenDay(site.Date)
+  date = shortenMonth(date)
+  date = shortenYear(date)
+
+  let dateAdded = shortenDay(site["Last updated date"])
+  dateAdded = shortenMonth(dateAdded)
+  dateAdded = shortenYear(dateAdded)
 
   try {
     return {
@@ -92,9 +136,9 @@ function parseRawSite(site) {
       lat: site.Lat,
       lng: site.Lon,
       exposures: [{
-        date: site.Date,
+        date: date,
         time: site.Time,
-        dateAdded: site["Last updated date"],
+        dateAdded: dateAdded,
         notes: site.Alert,
         healthAdvice: site.HealthAdviceHTML
       }]
@@ -105,44 +149,8 @@ function parseRawSite(site) {
   }
 }
 
-function samePlace(s1, s2) {
+function isSamePlace(s1, s2) {
   return s1.title === s2.title && s1.streetAddress === s2.streetAddress;
-}
-
-function isDuplicateSite(s1, s2) {
-    return JSON.stringify(s1) == JSON.stringify(s2);
-}
-
-function foldSites(sites) {
-    if (sites === undefined || sites.length == 0) {
-        return [];
-    }
-
-    let foldedSites = [sites[0]]; // add first one
-    for (s1 of sites) {
-        let folded = false
-        let duplicate = false
-
-        for (s2 of foldedSites) {
-            if (isDuplicateSite(s1, s2)) {
-                duplicate = true;
-                break;
-            }
-            if (samePlace(s1, s2) && !isDuplicateSite(s1, s2)) {
-                s2.exposures.push(...s1.exposures);
-                folded = true;
-                break;
-            }
-        }
-        if (duplicate) {
-            continue;
-        }
-        if (!folded) {
-            foldedSites.push(s1);
-        }
-    }
-
-    return foldedSites;
 }
 
 async function updateSites() {
@@ -160,7 +168,7 @@ async function updateSites() {
     }
 
     sites = sites.map(s => parseRawSite(s));
-    sites = foldSites(sites);
+    sites = utils.foldSites(sites, isSamePlace);
 
     // Delete documents in cold collection ref
     const coldCollectionStr = await getColdCollectionStr();
@@ -187,7 +195,7 @@ async function updateSites() {
         // update is from: https://firebase.google.com/docs/firestore/manage-data/add-data#update_elements_in_an_array
         pageRef.update({ sites: utils.admin.firestore.FieldValue.arrayUnion(site) });
 
-        await utils.sleep(1100 / numPages); // time between editing the same document (page) becomes ~1s
+        await utils.sleep(1000 / numPages); // time between editing the same document (page) becomes ~1s
     }
 
     // Flip hot and cold collections refs

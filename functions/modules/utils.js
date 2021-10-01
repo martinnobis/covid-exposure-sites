@@ -43,4 +43,40 @@ async function deleteQueryBatch(db, query, resolve) {
     });
 }
 
-module.exports = { sleep, deleteCollection, admin };
+function isDuplicateSite(s1, s2) {
+    return JSON.stringify(s1) == JSON.stringify(s2);
+}
+
+function foldSites(sites, isSamePlace) {
+    if (sites === undefined || sites.length == 0) {
+        return [];
+    }
+
+    let foldedSites = [sites[0]]; // add first one
+    for (s1 of sites) {
+        let folded = false
+        let duplicate = false
+
+        for (s2 of foldedSites) {
+            if (isDuplicateSite(s1, s2)) {
+                duplicate = true;
+                break;
+            }
+            if (isSamePlace(s1, s2) && !isDuplicateSite(s1, s2)) {
+                s2.exposures.push(...s1.exposures);
+                folded = true;
+                break;
+            }
+        }
+        if (duplicate) {
+            continue;
+        }
+        if (!folded) {
+            foldedSites.push(s1);
+        }
+    }
+
+    return foldedSites;
+}
+
+module.exports = { sleep, deleteCollection, foldSites, admin };

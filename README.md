@@ -54,6 +54,9 @@
 - [ ] Handle not finding site position gracefully and inform user, log onto firestore and update manually?
 - [ ] Add exposure time (e.g. HH:MM:SS) as a hover to the exposure add date
 - [ ] Let users share a location (address) to others with a URL (put address and lat/lng in the params, e.g. /?address=4+melbourne+street&loc=-39.43242,144.34234324)
+- [ ] Increase cache time of sites as I'm hitting the free tier for reads
+- [ ] Fix case when 0 sites are downloaded due to some bug and cache prevents sites from being downloaded even after it's been fixed. Shouldn't have to wait for cache to expire to download sites again. This still seems to occur according to an email I got.
+
 
 ### NSW
 - [ ] Do backend
