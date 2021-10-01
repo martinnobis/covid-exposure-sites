@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-const pages = ["index", "vic", "nsw"];
+const pages = ["index", "privacypolicy", "acceptableuse"];
 
 module.exports = {
     // The entry point file described above

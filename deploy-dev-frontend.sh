@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cp dist/index.bundle.js dist/vic.bundle.js dist/nsw.bundle.js dist/index.html dist/vic.html dist/nsw.html public
+cp dist/index.bundle.js dist/privacypolicy.bundle.js dist/acceptableuse.bundle.js dist/index.html dist/privacypolicy.html dist/acceptableuse.html public
