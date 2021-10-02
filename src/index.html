@@ -50,7 +50,7 @@
         <div class="container-md">
 
             <h1 class="display-5 fw-bold">Covid-19 exposure sites near me</h1>
-            <p class="col-md-8 fs-4 fst-italic text-muted">Victoria only</p>
+            <p class="col-md-8 fs-4 fst-italic text-muted">Victoria and New South Wales only</p>
 
             <div class="row g-3 mt-3">
 
@@ -101,9 +101,33 @@
                 </div>
             </div>
 
-            <p class="pt-2" id="numSites"></p>
-            <p class="pt-1" id="numExposures"></p>
-            <p class="pt-1" id="lastUpdated"></p>
+            <!-- Include state checkboxes -->
+            <div>
+              <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" id="nswCheckbox" name="includeState" value="nsw" checked>
+                  <label class="form-check-label" for="nswCheckbox">NSW</label>
+              </div>
+              <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" id="vicCheckbox" name="includeState" value="vic" checked>
+                  <label class="form-check-label" for="vicCheckbox">VIC</label>
+              </div>
+            </div>
+
+            <!-- State info div (populate this dynamically as states are checked) -->
+            <div id="stateInfo" class="row g-3 mt-3">
+
+            </div>
+
+            <h5>New South Wales</h5>
+            <p class="pt-2" id="nswNumSites"></p>
+            <p class="pt-1" id="nswNumExposures"></p>
+            <p class="pt-1" id="nswLastUpdated"></p>
+
+            <h5>Victoria</h5>
+            <p class="pt-2" id="vicNumSites"></p>
+            <p class="pt-1" id="vicNumExposures"></p>
+            <p class="pt-1" id="vicLastUpdated"></p>
+
 
             <details class="py-2">
                 <summary>Legend</summary>
@@ -300,12 +324,21 @@
     <!-- Loading toasts -->
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="sitesToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="vicSitesToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-body">
                 <div class="spinner-border text-primary mr-5" style="width: 1em; height: 1em;" role="status">
-                    <span class="visually-hidden">Downloading sites...</span>
+                    <span class="visually-hidden">Downloading VIC sites...</span>
                 </div>
-                Downloading sites...
+                Downloading VIC sites...
+            </div>
+        </div>
+
+        <div id="nswSitesToast" class="toast bg-light bg-gradient" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-body">
+                <div class="spinner-border text-primary mr-5" style="width: 1em; height: 1em;" role="status">
+                    <span class="visually-hidden">Downloading NSW sites...</span>
+                </div>
+                Downloading NSW sites...
             </div>
         </div>
 

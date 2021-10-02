@@ -245,16 +245,11 @@ async function getUserPosition() {
 // TODO: could use currying here to not have to import both functions and httpsCallable
 const sitesEndpoint = common.httpsCallable(common.functions, "sites");
 
-async function fetchSites() {
-    return sitesEndpoint({ state: "nsw" })
+async function fetchSites(state) {
+    return sitesEndpoint({ state: state })
         .then(response => {
             return response.data;
         });
-}
-
-function cacheSites(sitesVal) {
-    window.localStorage.setItem("sitesVal", JSON.stringify(sitesVal));
-    window.localStorage.setItem("sitesLastCached", +Date.now())
 }
 
 function prettyTime(ms) {
@@ -264,41 +259,45 @@ function prettyTime(ms) {
 
 const minsToMs = mins => mins * 60000;
 
-function getCachedSites() {
-    const maxAgeMins = 65; // maximum cached sites age
+function cacheSites(state, sitesVal) {
+    window.localStorage.setItem(`${state}SitesVal`, JSON.stringify(sitesVal));
+    window.localStorage.setItem(`${state}SitesLastCached`, +Date.now())
+}
+
+function getCachedSites(state) {
+    const maxAgeMins = 12*60; // maximum cached sites age
 
     const timeNow = Date.now();
-    const sitesVal = window.localStorage.getItem("sitesVal");
+    const sitesVal = window.localStorage.getItem(`${state}SitesVal`);
 
-    if (!sitesVal || parseInt(window.localStorage.getItem("sitesLastCached")) < +timeNow - minsToMs(maxAgeMins)) {
+    if (!sitesVal || parseInt(window.localStorage.getItem(`${state}SitesLastCached`)) < +timeNow - minsToMs(maxAgeMins)) {
         return null;
     } else {
         return JSON.parse(sitesVal);
     }
 }
 
-async function getSites() {
-    // No parallel, get all at once
+async function getSites(state, stateSitesToast) {
+    stateSitesToast.show();
 
-    sitesToast.show();
-
-    let sitesVal = getCachedSites();
+    let sitesVal = getCachedSites(state);
     if (sitesVal && sitesVal.results.length > 0) {
         // Cover case when some error occured and no sites were downloaded, don't want to wait the whole cache period to redownload sites again
-        sitesToast.hide();
+        stateSitesToast.hide();
         return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
     } else {
-        return fetchSites()
+        return fetchSites(state)
             .then(sitesVal => {
-                cacheSites(sitesVal);
-                sitesToast.hide();
+                cacheSites(state, sitesVal);
+                stateSitesToast.hide();
                 return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
             });
     }
 }
 
 const posToast = new Toast(document.getElementById("posToast"), { autohide: false });
-const sitesToast = new Toast(document.getElementById("sitesToast"), { autohide: false });
+const vicSitesToast = new Toast(document.getElementById("vicSitesToast"), { autohide: false });
+const nswSitesToast = new Toast(document.getElementById("nswSitesToast"), { autohide: false });
 
 const posPermissionDeniedToast = new Toast(document.getElementById("posPermissionDeniedToast"), { autohide: false });
 const posUnavailableToast = new Toast(document.getElementById("posUnavailableToast"), { autohide: false });
@@ -539,6 +538,7 @@ function getPosition() {
 }
 
 async function locBtnClicked() {
+  // One of the 3 buttons at the top was pressed, trigger recalculation of distances etc.
 
     const pos = await getPosition();
 
@@ -546,7 +546,7 @@ async function locBtnClicked() {
         return;
     }
 
-    gSites.then(sitesVal => {
+    gVicSites.then(sitesVal => {
         sitesVal.sites.forEach(site => {
             site.dist_km = calcDist(pos.lat, pos.lng, site.lat, site.lng);
             site.formattedDist = formatDist(site.dist_km);
@@ -595,19 +595,35 @@ let gAddressLng;
 let gRecentAddressLat;
 let gRecentAddressLng;
 
-let gSites = getSites()
+let gNswSites = getSites("nsw", nswSitesToast)
     .then(sitesVal => {
-        document.getElementById("numSites").innerHTML = `<span class="fs-5">${sitesVal.sites.length}</span> total sites`;
-        document.getElementById("lastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
+        document.getElementById("nswNumSites").innerHTML = `<span class="fs-5">${sitesVal.sites.length}</span> total sites`;
+        document.getElementById("nswLastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
 
         const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
-        document.getElementById("numExposures").innerHTML = `<span class="fs-5">${numExposures}</span> total exposures`;
+        document.getElementById("nswNumExposures").innerHTML = `<span class="fs-5">${numExposures}</span> total exposures`;
 
         let slicedSites = sitesVal.sites.slice(0, 20); // just show 20
-        populateTable(slicedSites, null); // populate with ???
+        populateTable(slicedSites, null); // populate with ?
 
         return sitesVal;
     })
+
+let gVicSites = getSites("vic", vicSitesToast)
+    .then(sitesVal => {
+        document.getElementById("vicNumSites").innerHTML = `<span class="fs-5">${sitesVal.sites.length}</span> total sites`;
+        document.getElementById("vicLastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
+
+        const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
+        document.getElementById("vicNumExposures").innerHTML = `<span class="fs-5">${numExposures}</span> total exposures`;
+
+        let slicedSites = sitesVal.sites.slice(0, 20); // just show 20
+        populateTable(slicedSites, null); // populate with ?
+
+        return sitesVal;
+    })
+
+
 
 // Set up back to top button
 
