@@ -277,27 +277,27 @@ function getCachedSites(state) {
     }
 }
 
-async function getSites(state, stateSitesToast) {
-    stateSitesToast.show();
+async function getSites(state) {
+
+    const downloadingSitesToast = new Toast(document.getElementById(`${state}SitesToast`, {autohide: false}));
+    downloadingSitesToast.show();
 
     let sitesVal = getCachedSites(state);
     if (sitesVal && sitesVal.results.length > 0) {
         // Cover case when some error occured and no sites were downloaded, don't want to wait the whole cache period to redownload sites again
-        stateSitesToast.hide();
+        downloadingSitesToast.hide();
         return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
     } else {
         return fetchSites(state)
             .then(sitesVal => {
                 cacheSites(state, sitesVal);
-                stateSitesToast.hide();
+                downloadingSitesToast.hide();
                 return { sites: sitesVal.results, lastUpdated: sitesVal.lastUpdated };
             });
     }
 }
 
 const posToast = new Toast(document.getElementById("posToast"), { autohide: false });
-const vicSitesToast = new Toast(document.getElementById("vicSitesToast"), { autohide: false });
-const nswSitesToast = new Toast(document.getElementById("nswSitesToast"), { autohide: false });
 
 const posPermissionDeniedToast = new Toast(document.getElementById("posPermissionDeniedToast"), { autohide: false });
 const posUnavailableToast = new Toast(document.getElementById("posUnavailableToast"), { autohide: false });
@@ -306,6 +306,9 @@ const posTimeoutToast = new Toast(document.getElementById("posTimeoutToast"), { 
 const useLocationBtn = document.getElementById("useLocationBtn");
 const useAddressBtn = document.getElementById("useAddressBtn");
 const useRecentAddress = document.getElementById("useRecentAddress");
+
+const nswCheckbox = document.getElementById("nswCheckbox");
+const vicCheckbox = document.getElementById("vicCheckbox");
 
 useLocationBtn.addEventListener("click", () => {
     activateLocBtn(useLocationBtn);
@@ -348,6 +351,48 @@ function useRecentAddressClicked() {
 
     locBtnClicked();
 };
+
+nswCheckbox.addEventListener("change", () => {
+  if (nswCheckbox.checked) {
+    showState("nsw");
+  } else {
+    dontShowState("nsw")
+  }
+})
+
+vicCheckbox.addEventListener("change", () => {
+  if (vicCheckbox.checked) {
+    showState("vic");
+  } else {
+    dontShowState("vic")
+  }
+})
+
+function showState(state, stateDownloadSitesToast) {
+    window.localStorage.setItem(`show${state}`, true);
+    const sites = getSites(state)
+      .then(sitesVal => {
+        const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
+        addStateInfo(state, sitesVal.sites.length, numExposures, sitesVal.lastUpdated);
+        locBtnClicked();
+        return sitesVal.sites;
+      })
+
+    gSites[state] = sites;
+
+    // rerender table
+    locBtnClicked();
+}
+
+function dontShowState(state) {
+    window.localStorage.setItem(`show${state}`, false);
+    removeStateInfo(state)
+
+    delete gSites.state;
+
+    // rerender table
+    locBtnClicked();
+}
 
 function activateLocBtn(button) {
     button.classList.add("shadow");
@@ -595,33 +640,73 @@ let gAddressLng;
 let gRecentAddressLat;
 let gRecentAddressLng;
 
-let gNswSites = getSites("nsw", nswSitesToast)
-    .then(sitesVal => {
-        document.getElementById("nswNumSites").innerHTML = `<span class="fs-5">${sitesVal.sites.length}</span> total sites`;
-        document.getElementById("nswLastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
+let gNswSites;
+let gVicSites;
 
-        const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
-        document.getElementById("nswNumExposures").innerHTML = `<span class="fs-5">${numExposures}</span> total exposures`;
 
-        let slicedSites = sitesVal.sites.slice(0, 20); // just show 20
-        populateTable(slicedSites, null); // populate with ?
+// global object with the format:
+// {"vic": [...], "nsw": [...]}
+let gSites = {};
 
-        return sitesVal;
-    })
+// check cache for checkbox state
+const showNsw = window.localStorage.getItem("shownsw");
 
-let gVicSites = getSites("vic", vicSitesToast)
-    .then(sitesVal => {
-        document.getElementById("vicNumSites").innerHTML = `<span class="fs-5">${sitesVal.sites.length}</span> total sites`;
-        document.getElementById("vicLastUpdated").innerHTML = `Updated ${prettyTime(sitesVal.lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.`;
+if (!showNsw) {
+  // hasn't been cached before, first time user, turn checkbox on
+  nswCheckbox.checked = true;
+  showState("nsw");
+} else {
+  // has been set in cache, retreive it
+  const showNswVal = JSON.parse(showNsw);
+  if (showNswVal) {
+    nswCheckbox.checked = true;
+    showState("nsw");
+  } else {
+    // don't do anything
+  }
+}
 
-        const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
-        document.getElementById("vicNumExposures").innerHTML = `<span class="fs-5">${numExposures}</span> total exposures`;
+const showVic = window.localStorage.getItem("showvic");
 
-        let slicedSites = sitesVal.sites.slice(0, 20); // just show 20
-        populateTable(slicedSites, null); // populate with ?
+if (!showVic) {
+  // hasn't been cached before, first time user, turn checkbox on
+  vicCheckbox.checked = true;
+  showState("vic");
+} else {
+  // has been set in cache, retreive it
+  const showVicVal = JSON.parse(showVic);
+  if (showVicVal) {
+    vicCheckbox.checked = true;
+    showState("vic");
+  }
+}
 
-        return sitesVal;
-    })
+function addStateInfo(state, numSites, numExposures, lastUpdated) {
+  let stateFullName;
+
+  if (state === "nsw") {
+    stateFullName = "New South Wales";
+  } else if (state === "vic") {
+    stateFullName = "Victoria";
+  }
+
+  const info = `
+     <h5>${stateFullName}</h5>
+     <p class="pt-2" id="${state}NumSites"><span class="fs-5">${numSites}</span> total sites</p>
+     <p class="pt-1" id="${state}NumExposures"><span class="fs-5">${numExposures}</span> total exposures</p>
+     <p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.</p>
+  `;
+
+  let infoDiv = document.createElement("div");
+  infoDiv.setAttribute("id", `${state}Info`)
+  infoDiv.innerHTML = info;
+
+  document.getElementById("stateInfo").appendChild(infoDiv);
+}
+
+function removeStateInfo(state) {
+  document.getElementById(`${state}Info`).remove();
+}
 
 
 
