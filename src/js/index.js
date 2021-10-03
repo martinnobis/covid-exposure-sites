@@ -19,18 +19,18 @@ function calcDist(lat1, lng1, lat2, lng2) {
     return R * c;
 }
 
-function formatDist(dist_km) {
-    if (dist_km < 1) {
+function formatDist(distKm) {
+    if (distKm < 1) {
         // display in m and round to nearest 10m
-        const value = Math.round(dist_km * 100) * 10;
+        const value = Math.round(distKm * 100) * 10;
         return `${value}m`
-    } else if (dist_km > 100) {
+    } else if (distKm > 100) {
         // prevent 4 digits
-        const value = Math.round(dist_km);
+        const value = Math.round(distKm);
         return `${value}km`
     } else {
         // display in km and round to nearest 100m
-        const value = dist_km.toFixed(1);
+        const value = distKm.toFixed(1);
         return `${value}km`
     }
 }
@@ -50,51 +50,42 @@ function getMaxTier(site) {
     return parseInt(exposureWithMaxTier.tier);
 }
 
-function populateTable(sites, userPos) {
+function clearTable() {
     let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
+    table.innerHTML = "";
+}
 
-    const dateFormat = new Intl.DateTimeFormat('en-AU', {
-        weekday: "short",
-        year: "2-digit",
-        month: "numeric",
-        day: 'numeric'
-    });
+function genDistanceElements(siteDistKm, userPos) {
 
-    table.innerHTML = ""; // clear table
+    let distance; // text with formatted distance value
+    let cellClasses = ["text-nowrap", "distCell", "bg-gradient"]; // list of html element class that ought to be applied to the distance value
 
-    sites.forEach((site, index) => {
-
-        let distCellClasses = ["text-nowrap", "distCell", "bg-gradient"]
-        let distance;
-        if (!userPos || !site.formattedDist || !site.dist_km) {
-            distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
-            distance = `<span class="loader__dot ">?</span>`;
+    if (!userPos || !siteDistKm) {
+        distance = `<span class="loader__dot ">?</span>`;
+        cellClasses = cellClasses.concat(["text-dark", "bg-light"]);
+    } else {
+        distance = formatDist(siteDistKm);
+        if (siteDistKm * 1000 < userPos.acc) {
+            distance = `<${Math.ceil(userPos.acc / 10) * 10}m`;
+            cellClasses = cellClasses.concat(["text-light", "bg-dark", "distCellShadow"]);
+        } else if (siteDistKm < 0.200) {
+            cellClasses = cellClasses.concat(["text-light", "bg-danger", "distCellShadow"]);
+        } else if (siteDistKm < 1) {
+            cellClasses = cellClasses.concat(["text-light", "bg-warning", "distCellShadow"]);
+        } else if (siteDistKm < 5) {
+            cellClasses = cellClasses.concat(["text-light", "bg-secondary", "distCellShadow"]);
         } else {
-
-            distance = site.formattedDist;
-
-            if (site.dist_km * 1000 < userPos.acc) {
-                distance = `<${Math.ceil(userPos.acc / 10) * 10}m`;
-                distCellClasses = distCellClasses.concat(["text-light", "bg-dark", "distCellShadow"]);
-            } else if (site.dist_km < 0.200) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-danger", "distCellShadow"]);
-            } else if (site.dist_km < 1) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-warning", "distCellShadow"]);
-            } else if (site.dist_km < 5) {
-                distCellClasses = distCellClasses.concat(["text-light", "bg-secondary", "distCellShadow"]);
-            } else {
-                distCellClasses = distCellClasses.concat(["text-dark", "bg-light"]);
-            }
+            cellClasses = cellClasses.concat(["text-dark", "bg-light"]);
         }
+    }
 
-        let row = table.insertRow();
-        row.insertCell(0).innerHTML = distance;
-        distCellClasses.forEach(c => {
-            row.cells[0].classList.add(c);
-        })
+    return [distance, cellClasses];
+}
 
+function getTierBadgeHtml(site) {
+    let tierBadge;
+    if (site.state === "vic") {
         const tier = getMaxTier(site);
-        let tierBadge = "";
         if (tier === 1) {
             tierBadge = `<span class="badge bg-danger">Tier ${tier}</span>`;
         } else if (tier === 2) {
@@ -102,76 +93,162 @@ function populateTable(sites, userPos) {
         } else {
             tierBadge = `<span class="badge bg-secondary">Tier ${tier}</span>`;
         }
+    }
+    return tierBadge;
+}
 
-        let numExposuresBadge = "";
-        if (site.exposures.length >= 5) {
-            numExposuresBadge = `<span class="badge bg-primary">5+ exposures</span>`;
+function getNumExposuresBadgeHtml(site) {
+    if (site.exposures.length >= 5) {
+        return `<span class="badge bg-primary">5+ exposures</span>`;
+    } else {
+        return null;
+    }
+}
+
+function getNewBadgeHtml(site) {
+    let newExposure = false;
+
+    for (const exposure in site.exposures) {
+        let dateAddedUnix;
+        if (site.state === "vic") {
+            dateAddedUnix = Date.parse(exposure.dateAddedDtm);
+        } else {
+            dateAddedUnix = Date.parse(exposure.dateAdded);
         }
+        const diff = (+today - +dateAddedUnix) / msInDay;
+        if (diff < 2) {
+            newExposure = true;
+            break;
+        }
+    }
 
-        let newExposure = false;
-        const exposuresHTML = site.exposures.map(exposure => {
+    if (newExposure) {
+        return `<span class="badge bg-success">New</span>`;
+    } else {
+        return null;
+    }
+}
+
+function getExposureHtmlList(site) {
+    // return list of exposure HTML elements
+    return site.exposures.map(exposure => {
+        if (site.state === "vic") {
+
+            const dateFormat = new Intl.DateTimeFormat('en-AU', {
+                weekday: "short",
+                year: "2-digit",
+                month: "numeric",
+                day: 'numeric'
+            });
+
             const date = dateFormat.format(Date.parse(exposure.dateDtm)).replace(",", "");
             const dateAdded = dateFormat.format(Date.parse(exposure.dateAddedDtm)).replace(",", "");
-
-            const dd = Date.parse(exposure.dateAddedDtm);
-            const diff = (+today - +dd) / msInDay
-            if (diff < 2) {
-                newExposure = true;
-            }
-
             return `
-            <tr>
-                <td>${date} ${exposure.time}</td>
-                <td>${dateAdded}</td>
-                <td>${exposure.notes}</td>
-            </tr>`;
+          <tr>
+              <td>${date} ${exposure.time}</td>
+              <td>${dateAdded}</td>
+              <td>${exposure.notes}</td>
+          </tr>`;
+        } else {
+            // nsw
+            return `
+          <tr>
+              <td>${exposure.date} ${exposure.time}</td>
+              <td>${exposure.dateAdded}</td>
+              <td>${exposure.healthAdvice}</td>
+          </tr>`;
+        }
+    })
+}
+
+function getExposureTableHtml(state, exposuresHtmlList, index) {
+    if (state === "vic") {
+        // collapse class has to be in it's own separate div without any padding for the animation to work.
+        return `
+      <div class="collapse" id="collapseSite${index}">
+          <table class="table">
+              <thead class="text-muted">
+                  <tr>
+                      <th class="fw-light"><small>Exposure</small></th>
+                      <th class="fw-light"><small>Added</small></th>
+                      <th class="fw-light"><small>Notes</small></th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${exposuresHtmlList.join("")}
+              </tbody>
+          </table>
+      </div>`;
+    } else {
+        // nsw
+        // collapse class has to be in it's own separate div without any padding for the animation to work.
+        return `
+      <div class="collapse" id="collapseSite${index}">
+          <table class="table">
+              <thead class="text-muted">
+                  <tr>
+                      <th class="fw-light"><small>Exposure</small></th>
+                      <th class="fw-light"><small>Added</small></th>
+                      <th class="fw-light"><small>Health Advice</small></th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${exposuresHtmlList.join("")}
+              </tbody>
+          </table>
+      </div>`;
+    }
+}
+
+function getSiteAddress(site) {
+    let address;
+    if (site.state === "vic") {
+        if (site.streetAddress) {
+            // some vic sites don't have addresses as they are public transport
+            address = site.streetAddress;
+            if (site.suburb) {
+                address = `${address}, ${site.suburb}`;
+            }
+        }
+    } else {
+        // nsw
+        address = `${site.streetAddress}, ${site.suburb}`;
+    }
+    return `${address}, ${site.state.toUpperCase()}`;
+}
+
+function populateTable(sites, userPos) {
+    clearTable();
+
+    let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
+
+    sites.forEach((site, index) => {
+
+        let row = table.insertRow();
+
+        const [distance, distCellClasses] = genDistanceElements(site.distKm, userPos);
+
+        row.insertCell(0).innerHTML = distance;
+        distCellClasses.forEach(c => {
+            row.cells[0].classList.add(c);
         })
 
-        let newBadge = "";
-        if (newExposure) {
-            newBadge = `<span class="badge bg-success">New</span>`;
-        }
-
-        // collapse class has to be in it's own separate div without any
-        // padding for the animation to work.
-        const detail = `
-        <div class="collapse" id="collapseSite${index}">
-            <table class="table">
-                <thead class="text-muted">
-                    <tr>
-                        <th class="fw-light"><small>Exposure</small></th>
-                        <th class="fw-light"><small>Added</small></th>
-                        <th class="fw-light"><small>Notes</small></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${exposuresHTML.join("")}
-                </tbody>
-            </table>
-        </div>`;
+        const tierBadge = getTierBadgeHtml(site) || "";
+        const newBadge = getNewBadgeHtml(site) || "";
+        const numExposuresBadge = getNumExposuresBadgeHtml(site) || "";
+        const exposuresHtmlList = getExposureHtmlList(site);
+        const detail = getExposureTableHtml(site.state, exposuresHtmlList, index);
+        const address = getSiteAddress(site) || "";
 
         let cell = row.insertCell(1);
-        if (site.streetAddress) {
-            let address = site.streetAddress;
-            if (site.suburb) {
-                address = address.concat(`, ${site.suburb}`);
-            }
-            cell.innerHTML = `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
-                    ${tierBadge} ${newBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>
-                    ${address}
-                    ${detail}
-                </div>
-            `;
-        } else {
-            cell.innerHTML =
-                `
-                <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
-                    ${tierBadge} ${newBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>
-                    ${detail}
-                </div>
-            `;
-        }
+
+        cell.innerHTML = `
+        <div data-bs-toggle="collapse" href="#collapseSite${index}" role="button" aria-expanded="false" aria-controls="collapseSite">
+                  ${tierBadge} ${newBadge} ${numExposuresBadge} <div class="fw-bold">${site.title}</div>
+                  ${address}
+                  ${detail}
+        </div>
+              `;
     })
 }
 
@@ -265,7 +342,14 @@ function cacheSites(state, sitesVal) {
 }
 
 function getCachedSites(state) {
-    const maxAgeMins = 12*60; // maximum cached sites age
+    let maxAgeMins; // maximum cached sites age
+    if (state === "nsw") {
+        maxAgeMins = 12 * 60;
+    } else if (state === "vic") {
+        maxAgeMins = 60;
+    } else {
+        maxAgeMins = 90;
+    }
 
     const timeNow = Date.now();
     const sitesVal = window.localStorage.getItem(`${state}SitesVal`);
@@ -278,8 +362,9 @@ function getCachedSites(state) {
 }
 
 async function getSites(state) {
+    // retrieve sites either from the cache or by downloading them
 
-    const downloadingSitesToast = new Toast(document.getElementById(`${state}SitesToast`, {autohide: false}));
+    const downloadingSitesToast = new Toast(document.getElementById(`${state}SitesToast`, { autohide: false }));
     downloadingSitesToast.show();
 
     let sitesVal = getCachedSites(state);
@@ -318,7 +403,7 @@ useLocationBtn.addEventListener("click", () => {
 
     gActiveLocBtn = "user";
 
-    locBtnClicked();
+    updateTable();
 });
 
 useAddressBtn.addEventListener("click", () => {
@@ -334,7 +419,7 @@ useAddressBtn.addEventListener("click", () => {
     posUnavailableToast.hide();
     posTimeoutToast.hide();
 
-    locBtnClicked();
+    updateTable();
 });
 
 function useRecentAddressClicked() {
@@ -349,49 +434,47 @@ function useRecentAddressClicked() {
     posUnavailableToast.hide();
     posTimeoutToast.hide();
 
-    locBtnClicked();
+    updateTable();
 };
 
 nswCheckbox.addEventListener("change", () => {
-  if (nswCheckbox.checked) {
-    showState("nsw");
-  } else {
-    dontShowState("nsw")
-  }
+    if (nswCheckbox.checked) {
+        showState("nsw");
+    } else {
+        dontShowState("nsw")
+    }
 })
 
 vicCheckbox.addEventListener("change", () => {
-  if (vicCheckbox.checked) {
-    showState("vic");
-  } else {
-    dontShowState("vic")
-  }
+    if (vicCheckbox.checked) {
+        showState("vic");
+    } else {
+        dontShowState("vic")
+    }
 })
 
 function showState(state, stateDownloadSitesToast) {
     window.localStorage.setItem(`show${state}`, true);
     const sites = getSites(state)
-      .then(sitesVal => {
-        const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
-        addStateInfo(state, sitesVal.sites.length, numExposures, sitesVal.lastUpdated);
-        locBtnClicked();
-        return sitesVal.sites;
-      })
+        .then(sitesVal => {
+            const numExposures = sitesVal.sites.reduce((a, b) => { return a + b.exposures.length }, 0);
+            addStateInfo(state, sitesVal.sites.length, numExposures, sitesVal.lastUpdated);
+            updateTable();
+            return sitesVal.sites;
+        })
 
     gSites[state] = sites;
 
-    // rerender table
-    locBtnClicked();
+    updateTable();
 }
 
 function dontShowState(state) {
     window.localStorage.setItem(`show${state}`, false);
     removeStateInfo(state)
 
-    delete gSites.state;
+    delete gSites[state];
 
-    // rerender table
-    locBtnClicked();
+    updateTable();
 }
 
 function activateLocBtn(button) {
@@ -497,7 +580,7 @@ function setgRecentAddressPosFromRecentAddress(address) {
         gRecentAddressLat = foundAddress.lat;
         gRecentAddressLng = foundAddress.lng;
 
-        locBtnClicked();
+        updateTable();
     }
 }
 
@@ -533,6 +616,7 @@ function cacheAddress(address, lat, lng) {
 }
 
 function deCacheAddress(address) {
+    // remove address from cache
     let addressesStr = window.localStorage.getItem("recentAddresses");
 
     if (addressesStr) {
@@ -565,13 +649,14 @@ function initialiseAutocompleteAddress() {
         cacheAddress(address, gAddressLat, gAddressLng);
         addAddressToRecentWidget(address);
 
-        locBtnClicked();
+        updateTable();
     });
 }
 
 let gActiveLocBtn;
 
 function getPosition() {
+    // get position either from geolocation or address
     if (gActiveLocBtn === "user") {
         return getUserPosition();
     } else if (gActiveLocBtn === "address") {
@@ -582,32 +667,45 @@ function getPosition() {
     }
 }
 
-async function locBtnClicked() {
-  // One of the 3 buttons at the top was pressed, trigger recalculation of distances etc.
+async function updateTable() {
+    // One of the 3 buttons at the top was pressed, trigger recalculation of distances etc.
 
-    const pos = await getPosition();
+    let totalSites = [];
+    for (const state in gSites) {
+        let sites = await gSites[state]; // recall that this is still a promise
 
+        sites = sites.map(s => {
+            s.state = state;
+            return s;
+        }); // add the state parameter now
+
+        totalSites = totalSites.concat(sites);
+    }
+
+    const pos = await getPosition(); // from geolocation or address
     if (!pos.lat || !pos.lng) {
+        populateTable(totalSites.slice(0, 20), null); // fills with ?
         return;
     }
 
-    gVicSites.then(sitesVal => {
-        sitesVal.sites.forEach(site => {
-            site.dist_km = calcDist(pos.lat, pos.lng, site.lat, site.lng);
-            site.formattedDist = formatDist(site.dist_km);
+    if (totalSites && totalSites.length > 0) {
+
+        totalSites.forEach(site => {
+            site.distKm = calcDist(pos.lat, pos.lng, site.lat, site.lng);
         });
 
-        sitesVal.sites.sort((a, b) => a.dist_km - b.dist_km);
+        totalSites.sort((a, b) => a.distKm - b.distKm);
 
         // get all sites within 10km
-        let filteredSites = sitesVal.sites.filter(site => site.dist_km < 10);
+        let filteredSites = totalSites.filter(site => site.distKm < 10);
         let numExposures = filteredSites.reduce((a, b) => { return a + b.exposures.length }, 0);
 
         let showingSitesElement = document.getElementById("showingSites");
 
         if (filteredSites.length < 20) {
             // if there are less than 20 sites within 10km, show the closest 20 instead
-            filteredSites = sitesVal.sites.slice(0, 20);
+            filteredSites = totalSites.slice(0, 20);
+
             numExposures = filteredSites.reduce((a, b) => { return a + b.exposures.length }, 0);
             showingSitesElement.innerHTML = `Showing the closest <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures`;
         } else {
@@ -615,7 +713,10 @@ async function locBtnClicked() {
         }
 
         populateTable(filteredSites, pos);
-    });
+    } else {
+        let table = document.getElementById("sites").getElementsByTagName("tbody")[0];
+        table.innerHTML = "";
+    }
 }
 
 function restoreRecentAddressesFromCache() {
@@ -652,60 +753,63 @@ let gSites = {};
 const showNsw = window.localStorage.getItem("shownsw");
 
 if (!showNsw) {
-  // hasn't been cached before, first time user, turn checkbox on
-  nswCheckbox.checked = true;
-  showState("nsw");
-} else {
-  // has been set in cache, retreive it
-  const showNswVal = JSON.parse(showNsw);
-  if (showNswVal) {
+    // hasn't been cached before, first time user, turn checkbox on
     nswCheckbox.checked = true;
     showState("nsw");
-  } else {
-    // don't do anything
-  }
+} else {
+    // has been set in cache, retreive it
+    const showNswVal = JSON.parse(showNsw);
+    if (showNswVal) {
+        nswCheckbox.checked = true;
+        showState("nsw");
+    } else {
+        // don't do anything
+    }
 }
 
 const showVic = window.localStorage.getItem("showvic");
 
 if (!showVic) {
-  // hasn't been cached before, first time user, turn checkbox on
-  vicCheckbox.checked = true;
-  showState("vic");
-} else {
-  // has been set in cache, retreive it
-  const showVicVal = JSON.parse(showVic);
-  if (showVicVal) {
+    // hasn't been cached before, first time user, turn checkbox on
     vicCheckbox.checked = true;
     showState("vic");
-  }
+} else {
+    // has been set in cache, retreive it
+    const showVicVal = JSON.parse(showVic);
+    if (showVicVal) {
+        vicCheckbox.checked = true;
+        showState("vic");
+    }
 }
 
 function addStateInfo(state, numSites, numExposures, lastUpdated) {
-  let stateFullName;
+    let stateFullName;
+    let lastUpdatedMsg;
 
-  if (state === "nsw") {
-    stateFullName = "New South Wales";
-  } else if (state === "vic") {
-    stateFullName = "Victoria";
-  }
+    if (state === "nsw") {
+        stateFullName = "New South Wales";
+        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx">NSW Health</a> data.</p>`;
+    } else if (state === "vic") {
+        stateFullName = "Victoria";
+        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.</p>`;
+    }
 
-  const info = `
+    const info = `
      <h5>${stateFullName}</h5>
      <p class="pt-2" id="${state}NumSites"><span class="fs-5">${numSites}</span> total sites</p>
      <p class="pt-1" id="${state}NumExposures"><span class="fs-5">${numExposures}</span> total exposures</p>
-     <p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.</p>
+     ${lastUpdatedMsg}
   `;
 
-  let infoDiv = document.createElement("div");
-  infoDiv.setAttribute("id", `${state}Info`)
-  infoDiv.innerHTML = info;
+    let infoDiv = document.createElement("div");
+    infoDiv.setAttribute("id", `${state}Info`)
+    infoDiv.innerHTML = info;
 
-  document.getElementById("stateInfo").appendChild(infoDiv);
+    document.getElementById("stateInfo").appendChild(infoDiv);
 }
 
 function removeStateInfo(state) {
-  document.getElementById(`${state}Info`).remove();
+    document.getElementById(`${state}Info`).remove();
 }
 
 

@@ -50,7 +50,7 @@
         <div class="container-md">
 
             <h1 class="display-5 fw-bold">Covid-19 exposure sites near me</h1>
-            <p class="col-md-8 fs-4 fst-italic text-muted">Victoria and New South Wales only</p>
+            <p class="col-md-8 fs-4 fst-italic text-muted">New South Wales and Victoria only</p>
 
             <div class="row g-3 mt-3">
 
@@ -78,7 +78,8 @@
                                 </svg>
                             Use an address
                             </h5>
-                            <input style="width: 100%" id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" />
+                            <p style="line-height: 1em"><small>Due to its cost, this feature has been temporarily disabled. Sorry for the inconvenience.</small></p>
+                            <!-- <input style="width: 100%" id="searchTextField" type="text" placeholder="Enter a location" autocomplete="on" runat="server" /> -->
 
                     </button>
                 </div>
@@ -102,7 +103,7 @@
             </div>
 
             <!-- Include state checkboxes -->
-            <div>
+            <div class="my-3">
               <div class="form-check form-check-inline">
                   <input class="form-check-input" type="checkbox" id="nswCheckbox" name="includeState" value="nsw">
                   <label class="form-check-label" for="nswCheckbox">NSW</label>
@@ -114,7 +115,7 @@
             </div>
 
             <!-- State info div (populate this dynamically as states are checked) -->
-            <div id="stateInfo" class="row g-3 mt-3">
+            <div id="stateInfo" class="row g-3">
 
             </div>
 
@@ -124,15 +125,15 @@
                 <div class="container">
                     <div class="row">
                         <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-danger">Tier 1</span></div>
-                        <div class="col">Isolate for 14 days</div>
+                        <div class="col">(VIC only) Isolate for 14 days</div>
                     </div>
                     <div class="row">
                         <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-warning">Tier 2</span></div>
-                        <div class="col">Isolate until negative</div>
+                        <div class="col">(VIC only) Isolate until negative</div>
                     </div>
                     <div class="row">
                         <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-secondary">Tier 3</span></div>
-                        <div class="col">Monitor symptoms</div>
+                        <div class="col">(VIC only) Monitor symptoms</div>
                     </div>
                     <div class="row">
                         <div style="width: 100px" class="col-sm-auto pe-0"><span class="badge bg-success">New</span></div>
@@ -272,7 +273,7 @@
                         </svg>
                     </div>
                     <h2>Find any issues?</h2>
-                    <p>Data from the Victorian Department of Health isn't perfect, please report anything that looks strange. Come back often to see new features and please contact us with any suggestions, comments or queries!</p>
+                    <p>Data from the states' Health Department isn't perfect, please report anything that looks strange. Come back often to see new features and please contact us with any suggestions, comments or queries!</p>
                     <a style="color: white;" href="mailto: covidexposuresites@gmail.com" class="icon-link">Email us</a>
                 </div>
 
@@ -292,6 +293,7 @@
                     </div>
                     <h2>Share this page!</h2>
                     <p>If you think your friends and family will find this page useful then please spread the word and share this page on your favourite social media platform.</p>
+    <a href="https://twitter.com/exposuresitesau?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @exposuresitesau</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
                 </div>
 
             </div>
@@ -352,7 +354,7 @@
 
     <!-- Disclaimer -->
 
-    <p class="text-muted p-5">
+    <p class="text-muted m-5">
         <small>
             Disclaimer: This website is unofficial but uses open data from official sources. The information on this website should be treated as a guide only and may not always be up to date. All efforts are made to keep this site up to date and accurate but it is not guaranteed. In addition to using this website we recommend that you review official sources of covid exposure site information. You should not rely solely on the information on this website.
         </small>

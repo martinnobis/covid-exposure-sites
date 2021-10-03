@@ -83,74 +83,75 @@ async function getSites() {
 }
 
 function shortenDay(text) {
-  text = text.replace("Monday", "Mon");
-  text = text.replace("Tuesday", "Tue");
-  text = text.replace("Wednesday", "Wed");
-  text = text.replace("Thursday", "Thu");
-  text = text.replace("Friday", "Fri");
-  text = text.replace("Saturday", "Sat");
-  text = text.replace("Sunday", "Sun");
-  return text
+    text = text.replace("Monday", "Mon");
+    text = text.replace("Tuesday", "Tue");
+    text = text.replace("Wednesday", "Wed");
+    text = text.replace("Thursday", "Thu");
+    text = text.replace("Friday", "Fri");
+    text = text.replace("Saturday", "Sat");
+    text = text.replace("Sunday", "Sun");
+    return text
 }
 
 function shortenMonth(text) {
-  text = text.replace("January", "Jan");
-  text = text.replace("Febuary", "Feb");
-  text = text.replace("March", "Mar");
-  text = text.replace("April", "Apr");
-  text = text.replace("May", "May");
-  text = text.replace("June", "Jun");
-  text = text.replace("July", "Jul");
-  text = text.replace("August", "Aug");
-  text = text.replace("September", "Sep");
-  text = text.replace("October", "Oct");
-  text = text.replace("November", "Nov");
-  text = text.replace("December", "Dec");
-  return text
+    text = text.replace("January", "Jan");
+    text = text.replace("Febuary", "Feb");
+    text = text.replace("March", "Mar");
+    text = text.replace("April", "Apr");
+    text = text.replace("May", "May");
+    text = text.replace("June", "Jun");
+    text = text.replace("July", "Jul");
+    text = text.replace("August", "Aug");
+    text = text.replace("September", "Sep");
+    text = text.replace("October", "Oct");
+    text = text.replace("November", "Nov");
+    text = text.replace("December", "Dec");
+    return text
 }
 
 function shortenYear(text) {
-  text = text.replace("2021", "21");
-  text = text.replace("2022", "22");
-  text = text.replace("2023", "23");
-  text = text.replace("2024", "24");
-  text = text.replace("2025", "25");
-  return text
+    text = text.replace("2021", "21");
+    text = text.replace("2022", "22");
+    text = text.replace("2023", "23");
+    text = text.replace("2024", "24");
+    text = text.replace("2025", "25");
+    return text
 }
 
 function parseRawSite(site) {
 
-  let date = shortenDay(site.Date)
-  date = shortenMonth(date)
-  date = shortenYear(date)
+    let date = shortenDay(site.Date)
+    date = shortenMonth(date)
+    date = shortenYear(date)
 
-  let dateAdded = shortenDay(site["Last updated date"])
-  dateAdded = shortenMonth(dateAdded)
-  dateAdded = shortenYear(dateAdded)
+    let dateAdded = shortenDay(site["Last updated date"])
+    dateAdded = shortenMonth(dateAdded)
+    dateAdded = shortenYear(dateAdded)
 
-  try {
-    return {
-      title: site.Venue,
-      streetAddress: site.Address,
-      suburb: site.Suburb,
-      lat: parseFloat(site.Lat),
-      lng: parseFloat(site.Lon),
-      exposures: [{
-        date: date,
-        time: site.Time,
-        dateAdded: dateAdded,
-        notes: site.Alert,
-        healthAdvice: site.HealthAdviceHTML
-      }]
+    const strippedHealthAdvice = site.HealthAdviceHTML.replace(/<[^>]*>?/gm, ""); // remove HTML as it can't be clicked anyway in the dropdown
+
+    try {
+        return {
+            title: site.Venue,
+            streetAddress: site.Address,
+            suburb: site.Suburb,
+            lat: parseFloat(site.Lat),
+            lng: parseFloat(site.Lon),
+            exposures: [{
+                date: date,
+                time: site.Time,
+                dateAdded: dateAdded,
+                healthAdvice: strippedHealthAdvice
+            }]
+        }
+    } catch (error) {
+        console.error(error, site);
+        throw error;
     }
-  } catch (error) {
-    console.error(error, site);
-    throw error;
-  }
 }
 
 function isSamePlace(s1, s2) {
-  return s1.title === s2.title && s1.streetAddress === s2.streetAddress;
+    return s1.title === s2.title && s1.streetAddress === s2.streetAddress;
 }
 
 async function updateSites() {
