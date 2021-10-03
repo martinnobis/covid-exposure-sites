@@ -3,7 +3,6 @@ import * as common from './common.js'
 import { Toast } from 'bootstrap';
 
 const today = new Date();
-const msInDay = 24 * 60 * 60 * 1000;
 
 function calcDist(lat1, lng1, lat2, lng2) {
     const degsToRads = deg => (deg * Math.PI) / 180.0;
@@ -106,9 +105,10 @@ function getNumExposuresBadgeHtml(site) {
 }
 
 function getNewBadgeHtml(site) {
+    const msInDay = 24 * 60 * 60 * 1000;
     let newExposure = false;
 
-    for (const exposure in site.exposures) {
+    for (const exposure of site.exposures) {
         let dateAddedUnix;
         if (site.state === "vic") {
             dateAddedUnix = Date.parse(exposure.dateAddedDtm);
@@ -147,7 +147,7 @@ function getExposureHtmlList(site) {
           <tr>
               <td>${date} ${exposure.time}</td>
               <td>${dateAdded}</td>
-              <td>${exposure.notes}</td>
+              <td><small>${exposure.notes}</small></td>
           </tr>`;
         } else {
             // nsw
@@ -155,7 +155,7 @@ function getExposureHtmlList(site) {
           <tr>
               <td>${exposure.date} ${exposure.time}</td>
               <td>${exposure.dateAdded}</td>
-              <td>${exposure.healthAdvice}</td>
+              <td><small>${exposure.healthAdvice}</small></td>
           </tr>`;
         }
     })
@@ -344,7 +344,7 @@ function cacheSites(state, sitesVal) {
 function getCachedSites(state) {
     let maxAgeMins; // maximum cached sites age
     if (state === "nsw") {
-        maxAgeMins = 12 * 60;
+        maxAgeMins = 6 * 60;
     } else if (state === "vic") {
         maxAgeMins = 60;
     } else {
@@ -406,21 +406,21 @@ useLocationBtn.addEventListener("click", () => {
     updateTable();
 });
 
-useAddressBtn.addEventListener("click", () => {
-    activateLocBtn(useAddressBtn);
-    deactivateLocBtn(useLocationBtn);
-    deactivateLocBtn(useRecentAddress); // deactivate the div
-    deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
-
-    gActiveLocBtn = "address";
-
-    // Remove any pos toast errors
-    posPermissionDeniedToast.hide();
-    posUnavailableToast.hide();
-    posTimeoutToast.hide();
-
-    updateTable();
-});
+// useAddressBtn.addEventListener("click", () => {
+//     activateLocBtn(useAddressBtn);
+//     deactivateLocBtn(useLocationBtn);
+//     deactivateLocBtn(useRecentAddress); // deactivate the div
+//     deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
+//
+//     gActiveLocBtn = "address";
+//
+//     // Remove any pos toast errors
+//     posPermissionDeniedToast.hide();
+//     posUnavailableToast.hide();
+//     posTimeoutToast.hide();
+//
+//     updateTable();
+// });
 
 function useRecentAddressClicked() {
     activateLocBtn(useRecentAddress);
@@ -730,8 +730,8 @@ function restoreRecentAddressesFromCache() {
 
 // Start here
 
-google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget
-initialiseAutocompleteAddress();
+// google.maps.event.addDomListener(window, "load", initialiseAutocompleteAddress); // used for autocomplete address widget
+// initialiseAutocompleteAddress();
 
 restoreRecentAddressesFromCache();
 addNoRecentAddressesMsg(); // will add if required
@@ -788,10 +788,10 @@ function addStateInfo(state, numSites, numExposures, lastUpdated) {
 
     if (state === "nsw") {
         stateFullName = "New South Wales";
-        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx">NSW Health</a> data.</p>`;
+        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx" target="_blank">NSW Health</a> data.</p>`;
     } else if (state === "vic") {
         stateFullName = "Victoria";
-        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites">Victorian Department of Health</a> data.</p>`;
+        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites" target="_blank">Victorian Department of Health</a> data.</p>`;
     }
 
     const info = `

@@ -20,7 +20,7 @@ exports.updateAllSites = functions.region("australia-southeast1").runWith({ time
     Vic.updateSites();
 })
 
-exports.updateNSWSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 720 minutes").onRun(async(context) => {
+exports.updateNSWSites = functions.region("australia-southeast1").runWith({ timeoutSeconds: 540 }).pubsub.schedule("every 360 minutes").onRun(async(context) => {
     Nsw.updateSites();
 })
 
