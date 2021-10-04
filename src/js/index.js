@@ -788,21 +788,22 @@ function addStateInfo(state, numSites, numExposures, lastUpdated) {
 
     if (state === "nsw") {
         stateFullName = "New South Wales";
-        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx" target="_blank">NSW Health</a> data.</p>`;
+        lastUpdatedMsg = `<p class="m-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx" target="_blank">NSW Health</a> data.</p>`;
     } else if (state === "vic") {
         stateFullName = "Victoria";
-        lastUpdatedMsg = `<p class="pt-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites" target="_blank">Victorian Department of Health</a> data.</p>`;
+        lastUpdatedMsg = `<p class="m-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites" target="_blank">Victorian Department of Health</a> data.</p>`;
     }
 
     const info = `
      <h5>${stateFullName}</h5>
-     <p class="pt-2" id="${state}NumSites"><span class="fs-5">${numSites}</span> total sites</p>
-     <p class="pt-1" id="${state}NumExposures"><span class="fs-5">${numExposures}</span> total exposures</p>
+     <p class="m-1" id="${state}NumSites"><span class="fs-5">${numSites}</span> total sites</p>
+     <p class="m-1" id="${state}NumExposures"><span class="fs-5">${numExposures}</span> total exposures</p>
      ${lastUpdatedMsg}
   `;
 
     let infoDiv = document.createElement("div");
     infoDiv.setAttribute("id", `${state}Info`)
+    infoDiv.setAttribute("class", "col-sm rounded shadow m-1 p-3")
     infoDiv.innerHTML = info;
 
     document.getElementById("stateInfo").appendChild(infoDiv);

@@ -103,24 +103,25 @@
             </div>
 
             <!-- Include state checkboxes -->
-            <div class="my-3">
-              <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="checkbox" id="nswCheckbox" name="includeState" value="nsw">
-                  <label class="form-check-label" for="nswCheckbox">NSW</label>
-              </div>
-              <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="checkbox" id="vicCheckbox" name="includeState" value="vic">
-                  <label class="form-check-label" for="vicCheckbox">VIC</label>
-              </div>
+            <div class="my-4 g-3">
+                  <h5>Show exposure sites for:</h5>
+                  <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="nswCheckbox" name="includeState" value="nsw">
+                      <label class="form-check-label" for="nswCheckbox">NSW</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="checkbox" id="vicCheckbox" name="includeState" value="vic">
+                      <label class="form-check-label" for="vicCheckbox">VIC</label>
+                  </div>
             </div>
 
             <!-- State info div (populate this dynamically as states are checked) -->
-            <div id="stateInfo" class="row g-3">
+            <div id="stateInfo" class="row">
 
             </div>
 
-            <details class="py-2">
-                <summary>Legend</summary>
+            <details class="mt-3">
+                <summary><h5 class="d-inline">Legend</h5></summary>
 
                 <div class="container">
                     <div class="row">
@@ -146,7 +147,7 @@
                 </div>
             </details>
 
-            <p id="showingSites"></p>
+            <p class="pt-3" id="showingSites"></p>
 
         </div>
     </div>
