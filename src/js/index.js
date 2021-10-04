@@ -442,6 +442,9 @@ nswCheckbox.addEventListener("change", () => {
         showState("nsw");
     } else {
         dontShowState("nsw")
+        if (!vicCheckbox.checked) {
+          clearShowingSitesMsg();
+        }
     }
 })
 
@@ -450,6 +453,9 @@ vicCheckbox.addEventListener("change", () => {
         showState("vic");
     } else {
         dontShowState("vic")
+        if (!nswCheckbox.checked) {
+          clearShowingSitesMsg();
+        }
     }
 })
 
@@ -667,6 +673,16 @@ function getPosition() {
     }
 }
 
+function setShowingSitesMsg(msg) {
+    let showingSitesElement = document.getElementById("showingSites");
+    showingSites.innerHTML = msg;
+}
+
+function clearShowingSitesMsg(msg) {
+    let showingSitesElement = document.getElementById("showingSites");
+    showingSites.innerHTML = "";
+}
+
 async function updateTable() {
     // One of the 3 buttons at the top was pressed, trigger recalculation of distances etc.
 
@@ -700,16 +716,15 @@ async function updateTable() {
         let filteredSites = totalSites.filter(site => site.distKm < 10);
         let numExposures = filteredSites.reduce((a, b) => { return a + b.exposures.length }, 0);
 
-        let showingSitesElement = document.getElementById("showingSites");
 
         if (filteredSites.length < 20) {
             // if there are less than 20 sites within 10km, show the closest 20 instead
             filteredSites = totalSites.slice(0, 20);
 
             numExposures = filteredSites.reduce((a, b) => { return a + b.exposures.length }, 0);
-            showingSitesElement.innerHTML = `Showing the closest <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures`;
+            setShowingSitesMsg(`Showing the closest <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures`);
         } else {
-            showingSitesElement.innerHTML = `Showing <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures within 10km`;
+            setShowingSitesMsg(`Showing <span class="fs-5">${filteredSites.length}</span> sites with <span class="fs-5">${numExposures}</span> exposures within 10km`);
         }
 
         populateTable(filteredSites, pos);
@@ -788,10 +803,10 @@ function addStateInfo(state, numSites, numExposures, lastUpdated) {
 
     if (state === "nsw") {
         stateFullName = "New South Wales";
-        lastUpdatedMsg = `<p class="m-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx" target="_blank">NSW Health</a> data.</p>`;
+        lastUpdatedMsg = `<p class="m-1" id="${state}LastUpdated"><small>Updated ${prettyTime(lastUpdated)} using <a href="https://www.health.nsw.gov.au/Infectious/covid-19/Pages/case-locations-and-alerts.aspx" target="_blank">NSW Health</a> data.</small></p>`;
     } else if (state === "vic") {
         stateFullName = "Victoria";
-        lastUpdatedMsg = `<p class="m-1" id="${state}LastUpdated">Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites" target="_blank">Victorian Department of Health</a> data.</p>`;
+        lastUpdatedMsg = `<p class="m-1" id="${state}LastUpdated"><small>Updated ${prettyTime(lastUpdated)} using <a href="https://www.coronavirus.vic.gov.au/exposure-sites" target="_blank">Victorian Department of Health</a> data.</small></p>`;
     }
 
     const info = `
