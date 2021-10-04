@@ -59,8 +59,8 @@
 
 
 ### NSW
-- [ ] Do backend
-- [ ] Create table in frontend, copy most of it from VIC
+- [x] Do backend
+- [x] Create table in frontend, copy most of it from VIC
 
 ### Victoria
 - [ ] Clean up line endings in raw site titles, addressses etc. (\t, \r, \n)
@@ -88,6 +88,7 @@ firebase> updateAllSites() # this way I can run updateAllSites myself in product
 ## Deployment
 
 Deploy Functions first so that I get the URLs of the endpoints to put into the frontend.
+No longer needed when using the httpsCallable endpoints.
 
 ### Functions
 

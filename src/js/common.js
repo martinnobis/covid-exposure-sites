@@ -33,11 +33,11 @@ if (!app) {
     });
 
     // PROD: flip lines below
-    // const functions = getFunctions(app, "australia-southeast1");
-    functions = getFunctions(app);
+    functions = getFunctions(app, "australia-southeast1");
+    // functions = getFunctions(app);
 }
 
 // PROD: comment out line
-connectFunctionsEmulator(functions, "localhost", 5001);
+// connectFunctionsEmulator(functions, "localhost", 5001);
 
 export { functions, httpsCallable }

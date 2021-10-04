@@ -1,7 +1,7 @@
 {
     "scripts": {
-        "build": "webpack --config webpack.dev.js",
-        "build:prod": "webpack --config webpack.prod.js"
+        "build": "rm -rf dist/*; webpack --config webpack.dev.js",
+        "build:prod": "rm -rf dist/*; webpack --config webpack.prod.js"
     },
     "devDependencies": {
         "autoprefixer": "^10.3.4",

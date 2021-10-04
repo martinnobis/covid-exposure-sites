@@ -2,7 +2,7 @@
 
 rm -rf public/*.html
 rm -rf public/*.js
-rm -rf public/*.LICENSE
+rm -rf public/*.LICENSE.txt
 
 # JS
 cp dist/index.*.bundle.js public/
