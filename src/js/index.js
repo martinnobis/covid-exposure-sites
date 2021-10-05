@@ -810,15 +810,17 @@ function addStateInfo(state, numSites, numExposures, lastUpdated) {
     }
 
     const info = `
-     <h5>${stateFullName}</h5>
-     <p class="m-1" id="${state}NumSites"><span class="fs-5">${numSites}</span> total sites</p>
-     <p class="m-1" id="${state}NumExposures"><span class="fs-5">${numExposures}</span> total exposures</p>
-     ${lastUpdatedMsg}
+     <div class="rounded shadow p-3"
+       <h5>${stateFullName}</h5>
+       <p class="m-1" id="${state}NumSites"><span class="fs-5">${numSites}</span> total sites</p>
+       <p class="m-1" id="${state}NumExposures"><span class="fs-5">${numExposures}</span> total exposures</p>
+       ${lastUpdatedMsg}
+     </div>
   `;
 
     let infoDiv = document.createElement("div");
     infoDiv.setAttribute("id", `${state}Info`)
-    infoDiv.setAttribute("class", "col-sm rounded shadow m-1 p-3")
+    infoDiv.setAttribute("class", "col-sm")
     infoDiv.innerHTML = info;
 
     document.getElementById("stateInfo").appendChild(infoDiv);

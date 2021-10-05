@@ -168,6 +168,9 @@ async function updateSites() {
         return;
     }
 
+    // filter out sites with no location!!
+    sites = sites.filter(s => s.Lat && s.Lon);
+
     sites = sites.map(s => parseRawSite(s));
     sites = utils.foldSites(sites, isSamePlace);
 

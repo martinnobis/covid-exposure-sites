@@ -46,13 +46,14 @@
         </div>
     </template>
 
-    <div class="bg-light px-2">
-        <div class="container-md">
+    <section class="bg-light pt-2">
+
+        <div class="container-md px-1">
 
             <h1 class="display-5 fw-bold">Covid-19 exposure sites near me</h1>
-            <p class="col-md-8 fs-4 fst-italic text-muted">New South Wales and Victoria only</p>
+            <p class="fs-4 fst-italic text-muted">New South Wales and Victoria only</p>
 
-            <div class="row g-3 mt-3">
+            <div class="row mt-3 g-3">
 
                 <div class="col-sm">
                     <!-- Use my location -->
@@ -100,28 +101,33 @@
                         </div>
                     </div>
                 </div>
+
             </div>
+            <!-- end row -->
+
 
             <!-- Include state checkboxes -->
-            <div class="my-4 g-3">
-                  <h5>Show exposure sites for:</h5>
-                  <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="nswCheckbox" name="includeState" value="nsw">
-                      <label class="form-check-label" for="nswCheckbox">NSW</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="vicCheckbox" name="includeState" value="vic">
-                      <label class="form-check-label" for="vicCheckbox">VIC</label>
-                  </div>
+            <div class="my-4">
+                <h5>Show exposure sites for:</h5>
+                <div class="m-1">
+                    <input class="form-check-input" type="checkbox" id="nswCheckbox" name="includeState" value="nsw">
+                    <label class="form-check-label" for="nswCheckbox">NSW</label>
+                </div>
+                <div class="m-1">
+                    <input class="form-check-input" type="checkbox" id="vicCheckbox" name="includeState" value="vic">
+                    <label class="form-check-label" for="vicCheckbox">VIC</label>
+                </div>
             </div>
 
             <!-- State info div (populate this dynamically as states are checked) -->
-            <div id="stateInfo" class="row">
-
+            <div class="row g-3" id="stateInfo">
             </div>
 
+
             <details class="mt-3">
-                <summary><h5 class="d-inline">Legend</h5></summary>
+                <summary>
+                    <h5 class="d-inline">Legend</h5>
+                </summary>
 
                 <div class="container">
                     <div class="row">
@@ -150,7 +156,9 @@
             <p class="pt-3" id="showingSites"></p>
 
         </div>
-    </div>
+        <!-- end container -->
+
+    </section>
 
     <!-- light wave -->
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 220"><path fill="#f8f9fa" fill-opacity="1" d="M0,128L48,122.7C96,117,192,107,288,112C384,117,480,139,576,154.7C672,171,768,181,864,154.7C960,128,1056,64,1152,64C1248,64,1344,128,1392,160L1440,192L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path></svg>
@@ -294,7 +302,8 @@
                     </div>
                     <h2>Share this page!</h2>
                     <p>If you think your friends and family will find this page useful then please spread the word and share this page on your favourite social media platform.</p>
-    <a href="https://twitter.com/exposuresitesau?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @exposuresitesau</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                    <a href="https://twitter.com/exposuresitesau?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @exposuresitesau</a>
+                    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
                 </div>
 
             </div>
