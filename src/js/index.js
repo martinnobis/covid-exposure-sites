@@ -46,7 +46,12 @@ function getMaxTier(site) {
             return minExp;
         }
     })
-    return parseInt(exposureWithMaxTier.tier);
+    let tier = parseInt(exposureWithMaxTier.tier);
+    if (isNaN(tier)) {
+      return "?";
+    } else {
+      return tier;
+    }
 }
 
 function clearTable() {
