@@ -216,3 +216,15 @@ tr:last-child {
         transition-duration: .35s;
     }
 }
+
+.twitter-follow-button, .twitter-follow-button:visited {
+    background-color: #1b95e0;
+    color: #fff;
+    border-radius: 1em;
+    height: 28px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 26px;
+    padding: 8px;
+    text-decoration: none;
+}
