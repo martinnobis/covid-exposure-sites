@@ -65,8 +65,32 @@
                                 </svg>
                                 Use my location
                             </h5>
-                        <div id="userAddress" class="fst-italic"></div>
                         </button>
+
+                    <p style="text-indent: 0.5em"><a data-bs-toggle="modal" data-bs-target="#saveUserLocModal" href="#">Save current location</a></p>
+
+                    <!-- Modal -->
+                    <div class="modal fade" id="saveUserLocModal" tabindex="-1" aria-labelledby="saveLocationModalLabel" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="saveLocationModalLabel">Save current location</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p class="text-center text-muted fs-5" id="userCurrentLoc">311" 41' 33 E</p>
+                            <div class="mb-3">
+                              <label for="locationLabel" class="form-label">Label <small class="fst-italic text-muted">(optional)</small></label>
+                              <input type="text" class="form-control" id="locationLabel" placeholder="e.g. Home, Work ...">
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary">Save</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                 </div>
 
                 <div class="col-sm">
@@ -93,7 +117,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="bi bi-clock" viewBox="0 0 16 16">
                                 <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
                                 <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
-                            </svg> Use recent address
+                            </svg> Use recent location
                         </h5>
 
                         <div id="recentAddresses" style="max-height: 120px;" class="overflow-auto">

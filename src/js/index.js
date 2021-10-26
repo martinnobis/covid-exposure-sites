@@ -400,6 +400,8 @@ const useRecentAddress = document.getElementById("useRecentAddress");
 const nswCheckbox = document.getElementById("nswCheckbox");
 const vicCheckbox = document.getElementById("vicCheckbox");
 
+var saveUserLocModal = document.getElementById("saveUserLocModal");
+
 useLocationBtn.addEventListener("click", () => {
     activateLocBtn(useLocationBtn);
     deactivateLocBtn(useAddressBtn);
@@ -411,21 +413,21 @@ useLocationBtn.addEventListener("click", () => {
     updateTable();
 });
 
-// useAddressBtn.addEventListener("click", () => {
-//     activateLocBtn(useAddressBtn);
-//     deactivateLocBtn(useLocationBtn);
-//     deactivateLocBtn(useRecentAddress); // deactivate the div
-//     deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
-//
-//     gActiveLocBtn = "address";
-//
-//     // Remove any pos toast errors
-//     posPermissionDeniedToast.hide();
-//     posUnavailableToast.hide();
-//     posTimeoutToast.hide();
-//
-//     updateTable();
-// });
+useAddressBtn.addEventListener("click", () => {
+    activateLocBtn(useAddressBtn);
+    deactivateLocBtn(useLocationBtn);
+    deactivateLocBtn(useRecentAddress); // deactivate the div
+    deactivateAllRecentAddressBtns(); // deactivate any active recent address btns too
+
+    gActiveLocBtn = "address";
+
+    // Remove any pos toast errors
+    posPermissionDeniedToast.hide();
+    posUnavailableToast.hide();
+    posTimeoutToast.hide();
+
+    updateTable();
+});
 
 function useRecentAddressClicked() {
     activateLocBtn(useRecentAddress);
@@ -462,6 +464,10 @@ vicCheckbox.addEventListener("change", () => {
           clearShowingSitesMsg();
         }
     }
+})
+
+saveUserLocModal.addEventListener("hidden.bs.modal", function (event) {
+  console.log("modal closed!")
 })
 
 function showState(state, stateDownloadSitesToast) {
