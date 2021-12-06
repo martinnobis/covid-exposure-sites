@@ -8,6 +8,11 @@
         "css-loader": "^6.2.0",
         "css-minimizer-webpack-plugin": "^3.0.2",
         "cssnano-cli": "^1.0.5",
+        "eslint": "^7.32.0",
+        "eslint-config-standard": "^16.0.3",
+        "eslint-plugin-import": "^2.25.3",
+        "eslint-plugin-node": "^11.1.0",
+        "eslint-plugin-promise": "^5.2.0",
         "exports-loader": "^3.0.0",
         "html-loader": "^2.1.2",
         "html-minifier": "^4.0.0",
@@ -27,7 +32,8 @@
     },
     "dependencies": {
         "bootstrap": "^5.1.0",
-        "firebase": "^9.0.1",
+        "firebase": "^9.6.0",
+        "firebase-tools": "^9.23.0",
         "jquery": "^3.6.0",
         "popper.js": "^1.16.1"
     }

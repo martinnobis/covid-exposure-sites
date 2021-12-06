@@ -1,7 +1,20 @@
 #!/bin/sh
 
+mkdir -p public/
+
 rm -rf public/*.html
 rm -rf public/*.js
 rm -rf public/*.LICENSE.txt
 
-cp dist/index.bundle.js dist/privacypolicy.bundle.js dist/acceptableuse.bundle.js dist/index.html dist/privacypolicy.html dist/acceptableuse.html public
+# js
+cp dist/index.bundle.js public/
+cp dist/privacypolicy.bundle.js public/
+cp dist/acceptableuse.bundle.js public/
+
+# HTML
+cp dist/index.html public/
+cp dist/privacypolicy.html public/
+cp dist/acceptableuse.html public/
+
+cp src/*.png public/
+cp src/site.webmanifest public/
